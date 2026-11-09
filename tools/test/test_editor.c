@@ -7,6 +7,7 @@
 #include "core/platform.h"
 #include "core/tai_config.h"
 #include "fake_platform.h"
+#include "ui/launch_card.h"
 #include "ui/plugin_flow.h"
 #include "ui/plugin_nav.h"
 
@@ -3400,9 +3401,74 @@ static void test_undo_snapshot_failure_preserves_previous(void)
     fake_fail_rename_path("ur0:tai/config.txt.undo", FAKE_RENAME_NONE);
 }
 
+static int card_has(const LaunchCard *card, const char *text)
+{
+    return strstr(card->body, text) != NULL;
+}
+
+static void test_launch_card_copy(void)
+{
+    LaunchCard card;
+
+    /* Read OK, both snapshots written. */
+    fake_reset();
+    editor_scan();
+    CHECK(editor_original_snapshot_present() == 1);
+    CHECK(editor_session_snapshot_written() == 1);
+    launch_card_build(&card);
+    CHECK(strcmp(card.title, "CONFIG SAFETY") == 0);
+    CHECK(card_has(&card, "A SESSION SNAPSHOT WAS WRITTEN"));
+    CHECK(!card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
+
+    /* A failed snapshot write must not be smoothed over. */
+    fake_reset();
+    fake_fail_backup(1);
+    editor_scan();
+    CHECK(editor_session_snapshot_written() == 0);
+    launch_card_build(&card);
+    CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
+    CHECK(!card_has(&card, "A SESSION SNAPSHOT WAS WRITTEN"));
+
+    /* No live config and no snapshot: locked, no restore promise. */
+    fake_reset();
+    fake_remove_file("ur0:tai/config.txt");
+    editor_scan();
+    launch_card_build(&card);
+    CHECK(card_has(&card, "NO CONFIG WAS FOUND"));
+    CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
+    CHECK(!card_has(&card, "A RESTORE SNAPSHOT IS AVAILABLE"));
+
+    /* Unreadable: locked, and the reason is named. */
+    fake_reset();
+    fake_fail_read_path("ur0:tai/config.txt", 1);
+    editor_scan();
+    launch_card_build(&card);
+    CHECK(card_has(&card, "EDITING IS LOCKED: CONFIG UNREADABLE"));
+    CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
+
+    /* Read OK but over the line ceiling: locked even though a snapshot landed. */
+    fake_reset();
+
+    static char many[EDITOR_LINES_MAX * 2 + 8];
+    size_t off = 0;
+
+    for (int i = 0; i < EDITOR_LINES_MAX + 16; ++i) {
+        many[off++] = '#';
+        many[off++] = '\n';
+    }
+    many[off] = '\0';
+
+    fake_add_file("ur0:tai/config.txt", many);
+    editor_scan();
+    launch_card_build(&card);
+    CHECK(card_has(&card, "EDITING IS LOCKED: TOO MANY LINES"));
+    CHECK(card_has(&card, "A SESSION SNAPSHOT WAS WRITTEN"));
+}
+
 int main(void)
 {
     test_scan_sample();
+    test_launch_card_copy();
     test_orphan_old_is_not_deleted();
     test_orphan_scan_failure_is_visible();
     test_missing_file_is_not_active();

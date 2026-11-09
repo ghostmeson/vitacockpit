@@ -37,6 +37,7 @@ CC="${CC:-cc}"
   "$ROOT/src/core/metrics.c" \
   "$ROOT/src/core/plugin_editor.c" \
   "$ROOT/src/core/plugins.c" \
+  "$ROOT/src/ui/launch_card.c" \
   "$ROOT/src/ui/plugin_flow.c" \
   "$ROOT/src/ui/plugin_nav.c" \
   -o "$OUT/test_editor"

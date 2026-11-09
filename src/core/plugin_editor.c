@@ -917,6 +917,14 @@ void editor_scan(void)
             g_editor.backup_warning = 1;
         }
 
+        /*
+         * The card needs the per-snapshot result, not the warning. `.original`
+         * is written once, so `original_ok` means "present", while `.session`
+         * is written from this launch's bytes.
+         */
+        g_editor.original_snapshot_present = original_ok;
+        g_editor.session_snapshot_written = session_ok;
+
         memcpy(g_editor.last_text, s_scan, (size_t)n);
         g_editor.last_text[n] = '\0';
         g_editor.last_len = n;
@@ -949,6 +957,16 @@ void editor_scan(void)
 
         sort_orphans(&g_editor);
     }
+}
+
+int editor_original_snapshot_present(void)
+{
+    return g_editor.original_snapshot_present;
+}
+
+int editor_session_snapshot_written(void)
+{
+    return g_editor.session_snapshot_written;
 }
 
 const char *editor_readonly_reason(void)

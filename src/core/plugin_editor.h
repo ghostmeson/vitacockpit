@@ -130,6 +130,8 @@ typedef struct {
     int rows_truncated;
     int lines_truncated;
     int backup_warning;
+    int original_snapshot_present; /* .original exists or was written at scan */
+    int session_snapshot_written;  /* .session was written from this scan */
     int original_available; /* cached: .original is readable */
     int session_available;  /* cached: .session is readable */
     int undo_available;     /* cached: readable .undo differs from live */
@@ -187,6 +189,15 @@ extern EditorState g_editor;
 
 /* Snapshot the config set, resolve the active file, parse it, and build rows. */
 void editor_scan(void);
+
+/*
+ * The launch snapshot result. `.original` is present when it already existed or
+ * was written at this scan; `.session` is written only from this scan's bytes.
+ * The launch card reads these instead of inferring from `backup_warning` or the
+ * readable-snapshot probes, which answer different questions.
+ */
+int editor_original_snapshot_present(void);
+int editor_session_snapshot_written(void);
 
 /*
  * Stage the next toggle in memory. No platform read, stat, write, or snapshot

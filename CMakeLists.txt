@@ -77,6 +77,7 @@ add_executable(cockpit
   src/platform/platform_psp2.c
   src/ui/core_text.c
   src/ui/header.c
+  src/ui/launch_card.c
   src/ui/modal.c
   src/ui/plugin_flow.c
   src/ui/plugin_nav.c
