@@ -365,11 +365,10 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
         close_modal(ui);
         break;
 
-    case PLUGIN_NAV_TAB_TOGGLE:
+    case PLUGIN_NAV_TAB_LEFT:
         clear_dock_message(ui);
-        ui->tab = ui->tab == UI_TAB_HOME ? UI_TAB_PLUGINS : UI_TAB_HOME;
         plugin_flow_focus_list(ui);
-
+        ui->tab = plugin_nav_tab_step(ui->tab, -1);
         if (ui->tab == UI_TAB_PLUGINS) {
             if (ui->selection < 0)
                 ui->selection = first_row();
@@ -377,11 +376,22 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
         }
         break;
 
-    case PLUGIN_NAV_HOME_SCROLL_UP:
-        plugin_nav_home_step(ui, -1, layout_max_scroll());
+    case PLUGIN_NAV_TAB_RIGHT:
+        clear_dock_message(ui);
+        plugin_flow_focus_list(ui);
+        ui->tab = plugin_nav_tab_step(ui->tab, 1);
+        if (ui->tab == UI_TAB_PLUGINS) {
+            if (ui->selection < 0)
+                ui->selection = first_row();
+            keep_selection_visible(ui);
+        }
         break;
-    case PLUGIN_NAV_HOME_SCROLL_DOWN:
-        plugin_nav_home_step(ui, 1, layout_max_scroll());
+
+    case PLUGIN_NAV_VITALS_SCROLL_UP:
+        plugin_nav_vitals_step(ui, -1, layout_max_scroll());
+        break;
+    case PLUGIN_NAV_VITALS_SCROLL_DOWN:
+        plugin_nav_vitals_step(ui, 1, layout_max_scroll());
         break;
 
     case PLUGIN_NAV_SELECT_UP:
@@ -446,7 +456,7 @@ int app_run(void)
 
     UiState ui;
     memset(&ui, 0, sizeof(ui));
-    ui.tab = UI_TAB_HOME;
+    ui.tab = UI_TAB_PLUGINS;
     ui.selection = first_row();
     ui.modal = UI_MODAL_NONE;
 

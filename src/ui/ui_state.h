@@ -8,8 +8,9 @@
  */
 
 typedef enum {
-    UI_TAB_HOME = 0,
-    UI_TAB_PLUGINS,
+    UI_TAB_PLUGINS = 0,
+    UI_TAB_VITALS,
+    UI_TAB_ABOUT,
     UI_TAB_COUNT
 } UiTab;
 
@@ -30,7 +31,7 @@ typedef enum {
 
 typedef struct {
     UiTab tab;
-    float home_scroll;
+    float vitals_scroll;
     float plugins_scroll;
     int selection; /* row index in g_editor */
 

@@ -33,7 +33,7 @@ static void draw_scrollbar(float scroll, int max_scroll, int total_h,
               thumb_h, C_DIM);
 }
 
-static void draw_home(const UiState *ui)
+static void draw_vitals(const UiState *ui)
 {
     draw_set_clip(VIEW_X, VIEW_Y, VIEW_W, VIEW_H);
 
@@ -41,7 +41,7 @@ static void draw_home(const UiState *ui)
         const PanelSlot *slot = &g_layout[i];
 
         Rect r = slot->rect;
-        r.y += (float)(VIEW_Y + VIEW_TOP_GAP) - ui->home_scroll;
+        r.y += (float)(VIEW_Y + VIEW_TOP_GAP) - ui->vitals_scroll;
 
         if (r.y + r.h <= (float)VIEW_Y || r.y >= (float)(VIEW_Y + VIEW_H))
             continue;
@@ -57,26 +57,26 @@ void screen_draw(float t, const UiState *ui)
 {
     header_draw(ui);
 
-    if (ui->tab == UI_TAB_HOME) {
-        draw_home(ui);
-        draw_scrollbar(ui->home_scroll, layout_max_scroll(),
-                       layout_canvas_height(),
-                       (float)(VIEW_H - VIEW_TOP_GAP));
-
-        /*
-         * Frame health belongs to HOME. PLUGINS uses the full bottom of the
-         * screen for its pinned transaction dock (D81).
-         */
-        theme_panel(g_frame.rect, g_frame.panel->title, g_frame.panel->accent,
-                    g_frame.chrome);
-        g_frame.panel->draw(g_frame.panel, g_frame.rect);
-    } else {
+    if (ui->tab == UI_TAB_PLUGINS) {
         float content_h = plugins_content_height();
         float track_h = (float)plugins_viewport_height();
 
         plugins_screen_draw(ui, content_h);
         draw_scrollbar(ui->plugins_scroll, plugins_max_scroll(),
                        (int)content_h, track_h);
+    } else if (ui->tab == UI_TAB_VITALS) {
+        draw_vitals(ui);
+        draw_scrollbar(ui->vitals_scroll, layout_max_scroll(),
+                       layout_canvas_height(),
+                       (float)(VIEW_H - VIEW_TOP_GAP));
+
+        /*
+         * Frame health belongs to VITALS. PLUGINS uses the full bottom of the
+         * screen for its pinned transaction dock (D81).
+         */
+        theme_panel(g_frame.rect, g_frame.panel->title, g_frame.panel->accent,
+                    g_frame.chrome);
+        g_frame.panel->draw(g_frame.panel, g_frame.rect);
     }
 
     modal_draw(ui);

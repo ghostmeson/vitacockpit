@@ -49,15 +49,15 @@ static void test_nav_surfaces(void)
     UiState ui;
 
     memset(&ui, 0, sizeof(ui));
-    ui.tab = UI_TAB_HOME;
+    ui.tab = UI_TAB_VITALS;
 
     CHECK(plugin_nav_action(&ui, INPUT_UP, 9, 0) ==
-          PLUGIN_NAV_HOME_SCROLL_UP);
+          PLUGIN_NAV_VITALS_SCROLL_UP);
     CHECK(plugin_nav_action(&ui, INPUT_DOWN, 9, 0) ==
-          PLUGIN_NAV_HOME_SCROLL_DOWN);
+          PLUGIN_NAV_VITALS_SCROLL_DOWN);
     CHECK(plugin_nav_action(&ui, INPUT_ACCEPT, 9, 0) == PLUGIN_NAV_NONE);
     CHECK(plugin_nav_action(&ui, INPUT_TAB_LEFT, 9, 0) ==
-          PLUGIN_NAV_TAB_TOGGLE);
+          PLUGIN_NAV_TAB_LEFT);
 
     ui.tab = UI_TAB_PLUGINS;
     ui.focus = UI_FOCUS_LIST;
@@ -108,7 +108,7 @@ static void test_nav_surfaces(void)
     CHECK(plugin_nav_action(&ui, INPUT_OPTIONS, 9, 0) ==
           PLUGIN_NAV_DOCK_TOGGLE);
     CHECK(plugin_nav_action(&ui, INPUT_TAB_RIGHT, 9, 0) ==
-          PLUGIN_NAV_TAB_TOGGLE);
+          PLUGIN_NAV_TAB_RIGHT);
 
     CHECK(plugin_nav_action(NULL, INPUT_UP, 9, 0) == PLUGIN_NAV_NONE);
 }
@@ -154,10 +154,36 @@ static void test_core_text(void)
     CHECK(strcmp(right, "CTX --  WAKE --") == 0);
 }
 
+static void test_tab_step_and_about(void)
+{
+    CHECK(plugin_nav_tab_step(UI_TAB_PLUGINS, 1) == UI_TAB_VITALS);
+    CHECK(plugin_nav_tab_step(UI_TAB_VITALS, 1) == UI_TAB_ABOUT);
+    CHECK(plugin_nav_tab_step(UI_TAB_ABOUT, 1) == UI_TAB_PLUGINS);
+    CHECK(plugin_nav_tab_step(UI_TAB_PLUGINS, -1) == UI_TAB_ABOUT);
+    CHECK(plugin_nav_tab_step(UI_TAB_ABOUT, -1) == UI_TAB_VITALS);
+
+    UiState ui;
+    memset(&ui, 0, sizeof(ui));
+    ui.tab = UI_TAB_ABOUT;
+
+    CHECK(plugin_nav_action(&ui, INPUT_UP, 9, 0) == PLUGIN_NAV_NONE);
+    CHECK(plugin_nav_action(&ui, INPUT_DOWN, 9, 0) == PLUGIN_NAV_NONE);
+    CHECK(plugin_nav_action(&ui, INPUT_LEFT, 9, 0) == PLUGIN_NAV_NONE);
+    CHECK(plugin_nav_action(&ui, INPUT_RIGHT, 9, 0) == PLUGIN_NAV_NONE);
+    CHECK(plugin_nav_action(&ui, INPUT_TAB_LEFT, 9, 0) ==
+          PLUGIN_NAV_TAB_LEFT);
+    CHECK(plugin_nav_action(&ui, INPUT_ACCEPT, 9, 0) == PLUGIN_NAV_NONE);
+
+    plugin_nav_apply_scroll(&ui, 1000.0f, 1.0f, 120, 400);
+    CHECK(ui.vitals_scroll == 0.0f);
+    CHECK(ui.plugins_scroll == 0.0f);
+}
+
 int main(void)
 {
     test_nav_modal();
     test_nav_surfaces();
+    test_tab_step_and_about();
     test_core_text();
 
     if (g_failures != 0) {

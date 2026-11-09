@@ -2441,15 +2441,15 @@ static void test_plugin_nav(void)
     UiState ui;
 
     memset(&ui, 0, sizeof(ui));
-    ui.tab = UI_TAB_HOME;
+    ui.tab = UI_TAB_VITALS;
 
     CHECK(plugin_nav_action(&ui, INPUT_UP, 9, 0) ==
-          PLUGIN_NAV_HOME_SCROLL_UP);
+          PLUGIN_NAV_VITALS_SCROLL_UP);
     CHECK(plugin_nav_action(&ui, INPUT_DOWN, 9, 0) ==
-          PLUGIN_NAV_HOME_SCROLL_DOWN);
+          PLUGIN_NAV_VITALS_SCROLL_DOWN);
     CHECK(plugin_nav_action(&ui, INPUT_ACCEPT, 9, 0) == PLUGIN_NAV_NONE);
     CHECK(plugin_nav_action(&ui, INPUT_TAB_LEFT, 9, 0) ==
-          PLUGIN_NAV_TAB_TOGGLE);
+          PLUGIN_NAV_TAB_LEFT);
 
     ui.tab = UI_TAB_PLUGINS;
     ui.focus = UI_FOCUS_LIST;
@@ -2504,11 +2504,11 @@ static void test_plugin_nav(void)
           PLUGIN_COMMIT_NONE);
 
     memset(&ui, 0, sizeof(ui));
-    ui.tab = UI_TAB_HOME;
+    ui.tab = UI_TAB_VITALS;
     plugin_nav_apply_scroll(&ui, 1000.0f, 1.0f, 120, 400);
-    CHECK(ui.home_scroll == 120.0f);
+    CHECK(ui.vitals_scroll == 120.0f);
     plugin_nav_apply_scroll(&ui, -1000.0f, 1.0f, 120, 400);
-    CHECK(ui.home_scroll == 0.0f);
+    CHECK(ui.vitals_scroll == 0.0f);
 
     ui.tab = UI_TAB_PLUGINS;
     plugin_nav_apply_scroll(&ui, 1000.0f, 1.0f, 120, 400);
@@ -2516,10 +2516,10 @@ static void test_plugin_nav(void)
     plugin_nav_scroll_plugins(&ui, 100.0f, 400);
     CHECK(ui.plugins_scroll == 400.0f);
 
-    plugin_nav_home_step(&ui, 1, 120);
-    CHECK(ui.home_scroll == PLUGIN_NAV_HOME_STEP);
-    plugin_nav_home_step(&ui, -1, 120);
-    CHECK(ui.home_scroll == 0.0f);
+    plugin_nav_vitals_step(&ui, 1, 120);
+    CHECK(ui.vitals_scroll == PLUGIN_NAV_VITALS_STEP);
+    plugin_nav_vitals_step(&ui, -1, 120);
+    CHECK(ui.vitals_scroll == 0.0f);
 }
 
 static void test_flow_dock_idle(void)

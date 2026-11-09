@@ -28,8 +28,9 @@ PluginNavAction plugin_nav_action(const UiState *ui, InputEvent event,
 
     switch (event) {
     case INPUT_TAB_LEFT:
+        return PLUGIN_NAV_TAB_LEFT;
     case INPUT_TAB_RIGHT:
-        return PLUGIN_NAV_TAB_TOGGLE;
+        return PLUGIN_NAV_TAB_RIGHT;
 
     case INPUT_OPTIONS:
         /* Triangle is dock-only. */
@@ -50,9 +51,11 @@ PluginNavAction plugin_nav_action(const UiState *ui, InputEvent event,
 
     case INPUT_UP:
     case INPUT_DOWN:
-        if (ui->tab == UI_TAB_HOME)
-            return event == INPUT_UP ? PLUGIN_NAV_HOME_SCROLL_UP
-                                     : PLUGIN_NAV_HOME_SCROLL_DOWN;
+        if (ui->tab == UI_TAB_ABOUT)
+            return PLUGIN_NAV_NONE;
+        if (ui->tab == UI_TAB_VITALS)
+            return event == INPUT_UP ? PLUGIN_NAV_VITALS_SCROLL_UP
+                                     : PLUGIN_NAV_VITALS_SCROLL_DOWN;
 
         if (ui->focus == UI_FOCUS_DOCK)
             return event == INPUT_UP ? PLUGIN_NAV_DOCK_LEAVE
@@ -111,10 +114,22 @@ PluginCommitMode plugin_nav_commit_mode(PluginFlowCommand command)
     }
 }
 
-void plugin_nav_scroll_home(UiState *ui, float delta, int max)
+UiTab plugin_nav_tab_step(UiTab tab, int direction)
+{
+    int count = (int)UI_TAB_COUNT;
+    int index = (int)tab;
+
+    if (index < 0 || index >= count)
+        index = 0;
+
+    index += direction < 0 ? count - 1 : 1;
+    return (UiTab)(index % count);
+}
+
+void plugin_nav_scroll_vitals(UiState *ui, float delta, int max)
 {
     if (ui != NULL)
-        ui->home_scroll = clamp_scroll(ui->home_scroll + delta, max);
+        ui->vitals_scroll = clamp_scroll(ui->vitals_scroll + delta, max);
 }
 
 void plugin_nav_scroll_plugins(UiState *ui, float delta, int max)
@@ -129,26 +144,26 @@ void plugin_nav_set_plugins_scroll(UiState *ui, float target, int max)
         ui->plugins_scroll = clamp_scroll(target, max);
 }
 
-void plugin_nav_apply_scroll(UiState *ui, float scroll_y, float dt, int home_max,
-                             int plugins_max)
+void plugin_nav_apply_scroll(UiState *ui, float scroll_y, float dt,
+                             int vitals_max, int plugins_max)
 {
     if (ui == NULL)
         return;
 
     float delta = scroll_y * dt;
 
-    if (ui->tab == UI_TAB_HOME)
-        plugin_nav_scroll_home(ui, delta, home_max);
-    else
+    if (ui->tab == UI_TAB_VITALS)
+        plugin_nav_scroll_vitals(ui, delta, vitals_max);
+    else if (ui->tab == UI_TAB_PLUGINS)
         plugin_nav_scroll_plugins(ui, delta, plugins_max);
 }
 
-void plugin_nav_home_step(UiState *ui, int direction, int max)
+void plugin_nav_vitals_step(UiState *ui, int direction, int max)
 {
     if (ui == NULL)
         return;
 
-    plugin_nav_scroll_home(ui, direction < 0 ? -PLUGIN_NAV_HOME_STEP
-                                             : PLUGIN_NAV_HOME_STEP,
-                           max);
+    plugin_nav_scroll_vitals(ui, direction < 0 ? -PLUGIN_NAV_VITALS_STEP
+                                               : PLUGIN_NAV_VITALS_STEP,
+                             max);
 }

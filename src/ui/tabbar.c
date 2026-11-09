@@ -5,14 +5,15 @@
 #include "gfx/theme.h"
 #include "ui/ui_state.h"
 
-#define TAB_HOME_X 210.0f
-#define TAB_PLUGINS_X 300.0f
+#define TAB_PLUGINS_X 210.0f
+#define TAB_VITALS_X 310.0f
+#define TAB_ABOUT_X 400.0f
 #define TAB_Y 20.0f
 #define TAB_UNDERLINE_Y 36.0f
 #define TAB_UNDERLINE_H 2.0f
 #define TAB_TRACK 1.0f
 
-#define HINT_X 430.0f
+#define HINT_X 480.0f
 #define HINT_Y 22.0f
 
 static void draw_tab(const char *label, float x, int active)
@@ -32,7 +33,8 @@ void tabbar_draw(const UiState *ui)
     if (ui == NULL)
         return;
 
-    draw_tab("HOME", TAB_HOME_X, ui->tab == UI_TAB_HOME);
     draw_tab("PLUGINS", TAB_PLUGINS_X, ui->tab == UI_TAB_PLUGINS);
+    draw_tab("VITALS", TAB_VITALS_X, ui->tab == UI_TAB_VITALS);
+    draw_tab("ABOUT", TAB_ABOUT_X, ui->tab == UI_TAB_ABOUT);
     font_text("L/R", HINT_X, HINT_Y, PX_MICRO, C_DIM);
 }

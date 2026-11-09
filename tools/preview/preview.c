@@ -194,7 +194,7 @@ static void reset_scene(UiState *ui)
     plugins_scan();
 
     memset(ui, 0, sizeof(*ui));
-    ui->tab = UI_TAB_HOME;
+    ui->tab = UI_TAB_VITALS;
     ui->selection = g_editor.row_count > 0 ? 0 : -1;
 }
 
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
         return 1;
 
     reset_scene(&ui);
-    ui.home_scroll = (float)layout_max_scroll();
+    ui.vitals_scroll = (float)layout_max_scroll();
     if (!render(dir, "preview-home-plugins.png", 2.7f, &ui))
         return 1;
 
@@ -357,7 +357,7 @@ int main(int argc, char **argv)
     fake_remove_file("ur0:tai/config.txt");
     editor_scan();
     plugins_scan();
-    ui.home_scroll = (float)layout_max_scroll();
+    ui.vitals_scroll = (float)layout_max_scroll();
     if (!render(dir, "preview-home-plugins-empty.png", 2.8f, &ui))
         return 1;
 
@@ -668,8 +668,8 @@ int main(int argc, char **argv)
                   "*PCSE00001\nur0:tai/extra.skprx\n");
     editor_scan();
     plugins_scan();
-    ui.tab = UI_TAB_HOME;
-    ui.home_scroll = (float)layout_max_scroll();
+    ui.tab = UI_TAB_VITALS;
+    ui.vitals_scroll = (float)layout_max_scroll();
     if (!render(dir, "preview-groups.png", 3.3f, &ui))
         return 1;
 
@@ -718,8 +718,8 @@ int main(int argc, char **argv)
                   "*main\n#ur0:tai/shellbat.suprx\n");
     editor_scan();
     plugins_scan();
-    ui.tab = UI_TAB_HOME;
-    ui.home_scroll = (float)layout_max_scroll();
+    ui.tab = UI_TAB_VITALS;
+    ui.vitals_scroll = (float)layout_max_scroll();
     if (!render(dir, "preview-home-plugins-warning.png", 6.0f, &ui))
         return 1;
 
