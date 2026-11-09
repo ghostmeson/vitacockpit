@@ -71,7 +71,7 @@ these are additive, not invasive. See §7.
   so the app ships `UNSAFE` (D42); `build.sh --safe` builds the restricted
   variant.
 - No hardware is reachable from the current development environment. The b13
-  run in §5 is the only dashboard evidence; b162 has not run on the console.
+  run in §5 is the only dashboard evidence; b164 has not run on the console.
 - The product is one app. A plugin manager that rewrites `config.txt` is enough
   surface; adding a resident process or a boot hook increased the failure cost
   without improving the manager.
@@ -155,7 +155,7 @@ makes "which build is on the Vita?" answerable.
 The artifact is named:
 
 ```
-build/cockpit-v<version>-b<build>.vpk        e.g. cockpit-v01.01-b162.vpk
+build/cockpit-v<version>-b<build>.vpk        e.g. cockpit-v01.01-b164.vpk
 ```
 
 | Part | Source | Changes |
@@ -194,8 +194,8 @@ community knowledge.
 
 | Area | Status |
 |---|---|
-| Builds and packages | `[V]` clean default and safe builds, 0 compiler warnings; `cockpit-v01.01-b162.vpk` is 135,495 bytes, SHA-256 `eb878f15af5bb31a4bd43704c2cfd79e5e73bbaa485365230fa69a924068aaf1`; the VPK contains `eboot.bin` and `sce_sys/` only; the unstripped ELF is kept as `build/cockpit` |
-| Host tests (sampling, plugin model, draft/commit, restore, undo, input, dock flow, launch card, ABOUT text) | `[V]` `tools/test/run.sh`, 161 metrics + 1,247 editor + 66 UI checks, 0 failures |
+| Builds and packages | `[V]` clean default and safe builds, 0 compiler warnings; `cockpit-v01.01-b164.vpk` is 135,549 bytes, SHA-256 `0df938415906463a8fc8f9dc252af56940e3b98136dd81c3d34ab96d3a7c057e`; the VPK contains `eboot.bin` and `sce_sys/` only; the unstripped ELF is kept as `build/cockpit` |
+| Host tests (sampling, plugin model, draft/commit, restore, undo, input, dock flow, launch card, ABOUT text) | `[V]` `tools/test/run.sh`, 161 metrics + 1,254 editor + 66 UI checks, 0 failures |
 | Plugin list (`ux0:` first, `ur0:` fallback) | `[V]` host harness keeps a 19-entry real config in full and groups it as KERNEL 9 / SYSTEM 8 / SYSTEM APPS 1 / ALL TITLES 1; host tests cover BOM, commented entries, long names, section mapping, priority merge, the 64-entry ceiling, full-path duplicate rows, `*!` halts, lock/warn policy, the two snapshots, and the exact `#` edit |
 | Staged transaction and restore | `[V]` host tests cover stage/discard/commit, one `.undo` per batch, the stale-file refusal, the plugin-level restore diff, `WILL REMOVE`, the locked-drop and no-change refusals, the read-only refusal for an unreadable or truncated live config, the `*!` halt before a protected path, the undo repair after an unrecovered write, the removed-path pending truth, the failed-save `.undo` preservation, the saved/last-write truth table, focus and the battery gate. `[C]` the end-to-end flow is unverified on hardware. |
 | Memory, CPU, storage, power, identity APIs declared in SDK | `[V]` header inspection; `sceKernelGetSystemInfo` is a userland `SceLibKernel` export |
@@ -204,9 +204,9 @@ community knowledge.
 | `sceIoDevctl("ux0:", 0x3001, …)` command | `[V]` `psp2/io/devctl.h` demonstrates it verbatim |
 | Storage result unit (bytes) | `[C]` — the devctl byte unit remains unconfirmed |
 | Device model codes | `[V]` `psp2common/kernel/sysmem.h` |
-| Screen layout and typography | `[V]` host preview render, 54 states, busiest 6,712 draw calls against the 8,000 budget; a three-tab header, the VITALS-only FRAME strip, the launch card, ABOUT, the reboot confirmation, the off-left/on-right rocker, the 12 px dock padding, and CORE/POWER outlines (D53, D54, D77, D78, D81, D83, D99) |
+| Screen layout and typography | `[V]` host preview render, 51 states, busiest 6,712 draw calls against the 8,000 budget; a three-tab header, the VITALS-only FRAME strip, the launch card, ABOUT, the reboot confirmation, the off-left/on-right rocker, the 12 px dock padding, and CORE/POWER outlines (D53, D54, D77, D78, D81, D83, D99) |
 | Launch card, three tabs, ABOUT | `[V]` host tests cover tab wrap, ABOUT inertness, the four card bodies, the reboot gate, and the confirmation copy; the preview renders the success, failed-snapshot, no-config, and unreadable card states, ABOUT allowed/blocked/unknown, and the four confirmation states. `[C]` none of the new screens has run on the console. |
-| Renders on hardware | `[V]` 2026-11-02 (b13): text, memory, power, identity and frame all draw on the console. 2026-11-04 (b124): the app and the PLUGINS screen draw. 2026-11-08: the user reports b150 runs on the console; CORE was memory-only. b162 adds the plugin-manager-first tabs, the launch card, and the ABOUT reboot gate and has not run on hardware yet. |
+| Renders on hardware | `[V]` 2026-11-02 (b13): text, memory, power, identity and frame all draw on the console. 2026-11-04 (b124): the app and the PLUGINS screen draw. 2026-11-08: the user reports b150 runs on the console; CORE was memory-only. b164 adds the plugin-manager-first tabs, the launch card, and the ABOUT reboot gate and has not run on hardware yet. |
 | b74 startup crash | `[V]` C2-12828-1; the core names `COCKPIT01`, stop reason `0x30003`, PC `0`, and r0 `0x812c0ae4` (`&reading` at `platform_read_clocks+0x2e`). The weak import and the whole clock path are gone (D99). |
 | Config write path | `[C]` the adapter's rename-away swap and live read-back are implemented and build; host tests exercise the same transaction in the fake, not the SDK calls, and the target's rename semantics are unverified. A failure names the stage (`OPEN`, `DATA`, `CLOSE`, `VERIFY`, `MOVE`, `RENAME`, `READBACK`, `RESTORE`, `UNDO`). |
 | Restore reads | `[V]` host tests read `.original`, `.session`, and `.undo` through the same port; `[C]` the SDK file reads are not exercised on hardware. |
@@ -234,12 +234,12 @@ policy, the navigation routing and SAVE/CONFIRM mapping, the input reducer, the
 three-tab wrap, the launch-card bodies, the shared reboot gate, and the ABOUT
 confirmation copy. The host preview (`tools/preview/run.sh`) renders the shipped
 composition against
-the same fake, 54 states with the busiest at 6,712 draw calls. Neither proves
+the same fake, 51 states with the busiest at 6,712 draw calls. Neither proves
 anything about the device: every reading in them is synthetic.
 
 ### Hardware handoff
 
-The next action is to flash `build/cockpit-v01.01-b162.vpk` and run this
+The next action is to flash `build/cockpit-v01.01-b164.vpk` and run this
 checklist on the 3.65 Enso console. The project stays `built` until the user
 records the evidence; no item below is claimed by the host suite.
 
@@ -337,7 +337,7 @@ Panels degrade, they do not crash.
 
 | Step | Adds | Needs |
 |---|---|---|
-| v1 | the plugin manager, VITALS, and ABOUT | b162 builds and is host-tested; the hardware checklist above is pending |
+| v1 | the plugin manager, VITALS, and ABOUT | b164 builds and is host-tested; the hardware checklist above is pending |
 | v2 | app inventory, per-title storage | `sceAppMgrGetAppInfo`, directory walk of `ux0:app` |
 | v3 | network status | `SceNetCtl` in the app process, not in a shell plugin |
 | v4 | theme switching, a second visual language | a theme abstraction in `gfx/theme` |

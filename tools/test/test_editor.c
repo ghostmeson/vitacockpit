@@ -3539,18 +3539,20 @@ static void test_launch_card_copy(void)
     CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
     CHECK(!card_has(&card, "A RESTORE SNAPSHOT IS AVAILABLE"));
 
-    /* Unreadable: locked, and the reason is named. */
+    /* Unreadable: locked, with its own body rather than "no config". */
     fake_reset();
     fake_fail_read_path("ur0:tai/config.txt", 1);
     editor_scan();
     launch_card_build(&card);
+    CHECK(card_has(&card, "COULD NOT BE READ"));
     CHECK(card_has(&card, "EDITING IS LOCKED: CONFIG UNREADABLE"));
     CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
+    CHECK(!card_has(&card, "NO CONFIG WAS FOUND"));
 
-    /* Read OK but over the line ceiling: locked even though a snapshot landed. */
+    /* Read OK but over the line ceiling: locked, and an original is present. */
     fake_reset();
 
-    static char many[EDITOR_LINES_MAX * 2 + 8];
+    static char many[(EDITOR_LINES_MAX + 16) * 2 + 1];
     size_t off = 0;
 
     for (int i = 0; i < EDITOR_LINES_MAX + 16; ++i) {
@@ -3559,11 +3561,29 @@ static void test_launch_card_copy(void)
     }
     many[off] = '\0';
 
+    fake_add_file("ur0:tai/config.txt.original", SAMPLE);
     fake_add_file("ur0:tai/config.txt", many);
     editor_scan();
     launch_card_build(&card);
     CHECK(card_has(&card, "EDITING IS LOCKED: TOO MANY LINES"));
     CHECK(card_has(&card, "A SESSION SNAPSHOT WAS WRITTEN"));
+    CHECK(card_has(&card, "THE ORIGINAL IS PRESENT"));
+
+    /* Over the config ceiling: the backup is skipped, but the original exists. */
+    fake_reset();
+
+    static char too_big[EDITOR_TEXT_MAX + 1024];
+    memset(too_big, '#', sizeof(too_big) - 1);
+    too_big[sizeof(too_big) - 1] = '\0';
+
+    fake_add_file("ur0:tai/config.txt.original", SAMPLE);
+    fake_add_file("ur0:tai/config.txt", too_big);
+    editor_scan();
+    launch_card_build(&card);
+    CHECK(card_has(&card, "EDITING IS LOCKED: CONFIG TOO LARGE"));
+    CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
+    CHECK(card_has(&card, "THE ORIGINAL IS PRESENT"));
+    CHECK(!card_has(&card, "NO ORIGINAL SNAPSHOT IS PRESENT"));
 }
 
 int main(void)

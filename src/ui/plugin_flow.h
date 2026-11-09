@@ -96,7 +96,8 @@ const char *plugin_flow_reboot_block_reason(void);
 
 /*
  * The one inline warning line. Precedence: the app's transient message, the
- * preview's locked/no-change/discard reason, the battery gate, a kernel or
+ * preview's locked/no-change/discard reason, the shared reboot gate (battery,
+ * then repair state), a kernel or
  * storage warning for a changed row, then the `SAVE, REBOOT LATER` copy while
  * that action is focused. Empty when the dock has nothing to say.
  */

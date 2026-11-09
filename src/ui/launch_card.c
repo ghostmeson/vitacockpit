@@ -39,6 +39,16 @@ static void append_locked_reason(char *body, size_t cap)
     append(body, cap, ". ");
 }
 
+static void build_unreadable(char *body, size_t cap)
+{
+    append(body, cap,
+           "COCKPIT MANAGES THE ACTIVE TAIHEN CONFIG.TXT. THE ACTIVE CONFIG "
+           "COULD NOT BE READ, SO ");
+    append_locked_reason(body, cap);
+    append(body, cap,
+           "NO SESSION SNAPSHOT WAS WRITTEN. CHECK CONFIG.TXT IN VITASHELL.");
+}
+
 static void build_no_config(char *body, size_t cap)
 {
     append(body, cap,
@@ -66,6 +76,11 @@ void launch_card_build(LaunchCard *out)
      * answers, so they get their own bodies. A single sentence cannot be true
      * in all of them, and a false restore promise is worse than no promise.
      */
+    if (g_editor.unreadable) {
+        build_unreadable(out->body, sizeof(out->body));
+        return;
+    }
+
     if (!g_editor.source_ok) {
         build_no_config(out->body, sizeof(out->body));
         return;

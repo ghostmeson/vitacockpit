@@ -57,7 +57,7 @@ export PATH="$VITASDK/bin:$PATH"
 ./build.sh                 # default UNSAFE eboot
 ./build.sh --safe          # restricted eboot, -safe artifact
 ./tools/test/run.sh        # host tests: metrics + editor + UI
-./tools/preview/run.sh     # 54 PNG scenes in build/preview/
+./tools/preview/run.sh     # 51 PNG scenes in build/preview/
 ./send.sh <vita-ip>        # uploads the newest VPK over FTP
 ```
 
@@ -195,11 +195,11 @@ A job is not done until the build, tests, previews, docs, and README agree.
 
 ## Current state (2026-11-10)
 
-- Artifact: `build/cockpit-v01.01-b162.vpk`, 135,495 bytes, SHA-256
-  `eb878f15af5bb31a4bd43704c2cfd79e5e73bbaa485365230fa69a924068aaf1`.
+- Artifact: `build/cockpit-v01.01-b164.vpk`, 135,549 bytes, SHA-256
+  `0df938415906463a8fc8f9dc252af56940e3b98136dd81c3d34ab96d3a7c057e`.
 - GitHub release `v1.01` carries this VPK. The project is `built`, not
   `verified`.
-- b150 is confirmed on the 3.65 console. b162 adds the plugin-manager-first tab
+- b150 is confirmed on the 3.65 console. b164 adds the plugin-manager-first tab
   order, the launch safety card, and the ABOUT reboot gate; it has not run on
   hardware yet.
 - The CORE idle-clock unit remains `[C]`; a coarser-than-microseconds counter is

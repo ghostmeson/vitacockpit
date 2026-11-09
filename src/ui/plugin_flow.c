@@ -260,19 +260,18 @@ int plugin_flow_battery_blocked(void)
 
 const char *plugin_flow_reboot_block_reason(void)
 {
+    static char charge_reason[64];
+
     if (!g_metrics.power_valid)
         return "BATTERY LEVEL UNKNOWN - CHARGE BEFORE REBOOTING";
 
-    if (plugin_flow_battery_blocked())
-        return "REBOOT BLOCKED - CHARGE TO 20%";
+    if (plugin_flow_battery_blocked()) {
+        snprintf(charge_reason, sizeof(charge_reason),
+                 "REBOOT BLOCKED - CHARGE TO %d%%", REBOOT_MIN_PERCENT);
+        return charge_reason;
+    }
 
-    if (g_editor.write_unrecovered)
-        return "REPAIR WITH UNDO FIRST";
-
-    if (g_editor.recover_failed)
-        return "RECOVERY FAILED";
-
-    return NULL;
+    return editor_repair_reason();
 }
 
 static int preview_committable(void)

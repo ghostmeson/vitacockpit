@@ -937,6 +937,13 @@ void editor_scan(void)
     refresh_snapshot_availability();
 
     /*
+     * The card's "original" sentence means "a readable original exists", not
+     * "this launch wrote one". The probe above answers exactly that, including
+     * the too-large and unreadable paths where the backup is skipped.
+     */
+    g_editor.original_snapshot_present = g_editor.original_available;
+
+    /*
      * ux0: is tried first, so ur0: can only be active when ux0: is absent: a
      * ur0:-active scan has no shadowed ux0: file to report.
      */
@@ -969,12 +976,22 @@ int editor_session_snapshot_written(void)
     return g_editor.session_snapshot_written;
 }
 
-const char *editor_readonly_reason(void)
+const char *editor_repair_reason(void)
 {
     if (g_editor.write_unrecovered)
         return "REPAIR WITH UNDO FIRST";
     if (g_editor.recover_failed)
         return "RECOVERY FAILED";
+
+    return NULL;
+}
+
+const char *editor_readonly_reason(void)
+{
+    const char *repair = editor_repair_reason();
+
+    if (repair != NULL)
+        return repair;
     if (g_editor.unreadable)
         return "CONFIG UNREADABLE";
     if (!g_editor.source_ok)

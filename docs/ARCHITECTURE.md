@@ -338,6 +338,7 @@ cached facts and draws; it never reads, stats, or writes a file.
 | `cpuInfo[].idleClock` advances in microseconds | `[C]` the header does not state the unit; `core/metrics.c` rejects a delta larger than elapsed time. A coarser unit is not detectable from the counter, so the hardware checklist treats a static 100 % at idle as unavailable. | `core/metrics.c`, `platform_psp2.c` |
 | A userland UNSAFE eboot may cold-reset on 3.65 Enso | `[C]` the header says it always returns 0; the reset itself is unverified, including from the ABOUT confirmation | `platform_psp2.c` |
 | Holding the power button for two seconds opens the power menu, and five seconds forces a shutdown | `[V]` the official PS Vita user guide; `[C]` the exact on-console path on this 3.65 Enso unit | `ui/about.c` |
+| `vita2d_draw_rectangle` honours the colour alpha, so the modal scrim dims the app instead of replacing it | `[C]` the host shim blends it; the device has not rendered the scrim | `gfx/draw.c`, `ui/modal.c` |
 | `sceIoSyncByFd` flushes data before close | `[V]` declared in `psp2/io/fcntl.h`; its effect is best-effort here | `platform_psp2.c` |
 | `boot_config.txt` is never opened | `[V]` no source path names it | `core/plugin_editor.c` |
 

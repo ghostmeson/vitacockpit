@@ -190,7 +190,8 @@ static void request_reboot(UiState *ui)
         modal_open_error_titled(
             ui, "RESTART FAILED",
             "THE SYSTEM REFUSED THE RESTART REQUEST. HOLD THE POWER BUTTON "
-            "FOR 5 SECONDS, THEN POWER ON.");
+            "FOR 2 SECONDS AND CHOOSE POWER OFF; IF IT STILL DOES NOT "
+            "RESPOND, HOLD FOR 5 SECONDS.");
         set_dock_message(ui, "RESTART FAILED. TURN OFF AND ON.");
         return;
     }
@@ -202,16 +203,11 @@ static void request_reboot(UiState *ui)
      */
     modal_open_error_titled(
         ui, "REBOOT REQUESTED",
-        "IF THE SCREEN STAYS ON, HOLD THE POWER BUTTON FOR 5 SECONDS, THEN "
-        "POWER ON.");
-    set_dock_message(ui, "REBOOT REQUESTED. IF IT STAYS ON, HOLD POWER 5 SEC.");
+        "IF THE SCREEN STAYS ON, HOLD THE POWER BUTTON FOR 2 SECONDS AND "
+        "CHOOSE POWER OFF; IF IT STILL DOES NOT RESPOND, HOLD FOR 5 SECONDS.");
+    set_dock_message(ui, "REBOOT REQUESTED. IF IT STAYS ON, HOLD POWER 2 SEC.");
 }
 
-/*
- * One commit path for SAVE and CONFIRM. A preview commits the snapshot it is
- * showing; a draft commits the working set. The editor owns the stale check,
- * the `.undo`, and the write (KTD5).
- */
 /*
  * Cross on ABOUT. The gate runs first, so a blocked reboot never opens a
  * confirmation that would refuse itself. When the gate allows it, the body
@@ -232,6 +228,11 @@ static void activate_about(UiState *ui)
     modal_open_reboot(ui, title, body);
 }
 
+/*
+ * One commit path for SAVE and CONFIRM. A preview commits the snapshot it is
+ * showing; a draft commits the working set. The editor owns the stale check,
+ * the `.undo`, and the write (KTD5).
+ */
 static void do_commit(UiState *ui, int reboot)
 {
     char err[ERR_TEXT_MAX];
@@ -394,26 +395,19 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
         break;
 
     case PLUGIN_NAV_TAB_LEFT:
-        clear_dock_message(ui);
-        plugin_flow_focus_list(ui);
-        ui->tab = plugin_nav_tab_step(ui->tab, -1);
-        if (ui->tab == UI_TAB_PLUGINS) {
-            if (ui->selection < 0)
-                ui->selection = first_row();
-            keep_selection_visible(ui);
-        }
-        break;
+    case PLUGIN_NAV_TAB_RIGHT: {
+        int direction = action == PLUGIN_NAV_TAB_LEFT ? -1 : 1;
 
-    case PLUGIN_NAV_TAB_RIGHT:
         clear_dock_message(ui);
         plugin_flow_focus_list(ui);
-        ui->tab = plugin_nav_tab_step(ui->tab, 1);
+        ui->tab = plugin_nav_tab_step(ui->tab, direction);
         if (ui->tab == UI_TAB_PLUGINS) {
             if (ui->selection < 0)
                 ui->selection = first_row();
             keep_selection_visible(ui);
         }
         break;
+    }
 
     case PLUGIN_NAV_VITALS_SCROLL_UP:
         plugin_nav_vitals_step(ui, -1, layout_max_scroll());

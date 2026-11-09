@@ -17,7 +17,6 @@
 
 #define ABOUT_Y 76.0f
 #define ABOUT_H 370.0f
-#define ABOUT_INSET 34.0f
 #define ABOUT_TITLE_Y (ABOUT_Y + PANEL_BODY_Y)
 #define ABOUT_DESC_Y (ABOUT_TITLE_Y + LINE_H(PX_HERO) + SP_3)
 #define ABOUT_DESC_STEP (LINE_H(PX_MICRO) + SP_1)
@@ -31,7 +30,7 @@
 
 static void draw_reboot(const char *block)
 {
-    float x = (float)MARGIN + ABOUT_INSET;
+    float x = (float)MARGIN + PANEL_INSET;
     float y = ABOUT_REBOOT_Y;
     int allowed = block == NULL;
 
@@ -55,14 +54,14 @@ static void draw_reboot(const char *block)
                         PX_MICRO, C_DIM);
 }
 
-void about_draw(const UiState *ui)
+void about_draw(void)
 {
     Rect r = {(float)MARGIN, ABOUT_Y, (float)(SCREEN_W - 2 * MARGIN), ABOUT_H};
     const char *block = plugin_flow_reboot_block_reason();
 
     theme_panel(r, "ABOUT", C_CYAN, CHROME_SATELLITE);
 
-    float x = r.x + ABOUT_INSET;
+    float x = r.x + PANEL_INSET;
 
     font_text_tracked("COCKPIT", x, ABOUT_TITLE_Y, PX_HERO, C_WHITE, 1.0f);
 
@@ -85,6 +84,4 @@ void about_draw(const UiState *ui)
               x, ABOUT_POWER_Y, PX_MICRO, C_DIM);
     font_text("IF THE SCREEN IS FROZEN, HOLD 5 SEC FOR A FORCED SHUTDOWN.",
               x, ABOUT_POWER_Y + ABOUT_POWER_STEP, PX_MICRO, C_DIM);
-
-    (void)ui;
 }

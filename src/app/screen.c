@@ -79,7 +79,7 @@ void screen_draw(float t, const UiState *ui)
                     g_frame.chrome);
         g_frame.panel->draw(g_frame.panel, g_frame.rect);
     } else {
-        about_draw(ui);
+        about_draw();
     }
 
     modal_draw(ui);

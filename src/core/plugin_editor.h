@@ -287,6 +287,9 @@ const char *editor_section_text(PluginSection section);
 /* The basename, or the full path when two rows share a basename. */
 const char *editor_row_label(int row);
 
+/* "REPAIR WITH UNDO FIRST" / "RECOVERY FAILED", or NULL when neither applies. */
+const char *editor_repair_reason(void);
+
 /* Why the whole page is read-only, or NULL when editing is possible. */
 const char *editor_readonly_reason(void);
 
