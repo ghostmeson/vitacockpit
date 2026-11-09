@@ -1,7 +1,7 @@
 # Reddit announcement
 
-Draft for a community release post. The body below is ready to paste; only the
-two link placeholders need filling.
+Draft for a community release post. The body below is ready to paste; the
+release and repo links point at the published repository.
 
 ## Before posting
 
@@ -11,8 +11,8 @@ two link placeholders need filling.
 2. Replace each `▸ IMAGE:` line with the matching image. In the new Reddit
    editor, delete the line and insert the image at that point; on old Reddit, a
    gallery post puts the images at the top, so drop the markers.
-3. Fill `[ADD RELEASE LINK]` and `[ADD REPO LINK]`. Nothing is pushed to the
-   remote yet, so no URL exists to cite.
+3. The release and repo links below are live. Update them if the release tag
+   changes.
 4. The build line is the b156 artifact. Rebuild and update it if the source
    changes before posting.
 
@@ -170,9 +170,9 @@ say `--` instead.
 Built with VitaSDK 2026.08 and libvita2d. 1,412 host checks and 40 preview scenes
 pass, and the VPK contains only `eboot.bin` and `sce_sys/`.
 
-**Download:** [ADD RELEASE LINK]
+**Download:** https://github.com/ghostmeson/vitacockpit/releases/tag/v1.00
 
-**Source:** [ADD REPO LINK]
+**Source:** https://github.com/ghostmeson/vitacockpit
 
 **Build:** `cockpit-v01.00-b156.vpk`, 132,734 bytes, SHA-256
 `84c9d16c8c10d5c8ad918ff5a5177041780884e93829e3a1b5cf991ff0b6335c`
