@@ -43,6 +43,7 @@ SRC="$ROOT/src"
   "$SRC/panels/storage.c" \
   "$SRC/panels/system.c" \
   "$SRC/ui/about.c" \
+  "$SRC/ui/about_text.c" \
   "$SRC/ui/core_text.c" \
   "$SRC/ui/header.c" \
   "$SRC/ui/launch_card.c" \

@@ -15,6 +15,7 @@
 #include "gfx/layout.h"
 #include "panels/plugins.h"
 #include "panels/registry.h"
+#include "ui/about_text.h"
 #include "ui/launch_card.h"
 #include "ui/modal.h"
 #include "ui/plugin_flow.h"
@@ -324,6 +325,8 @@ int main(int argc, char **argv)
     const char *dir = argc > 1 ? argv[1] : ".";
     UiState ui;
     char err[96];
+    char title[32];
+    char body[256];
 
     reset_scene(&ui);
 
@@ -337,6 +340,44 @@ int main(int argc, char **argv)
     launch_card_build(&card);
     modal_open_safety(&ui, &card);
     if (!render(dir, "preview-safety-card.png", 2.6f, &ui))
+        return 1;
+    ui.modal = UI_MODAL_NONE;
+
+    /* A failed snapshot write: the card must not claim a restore point. */
+    reset_scene(&ui);
+    fake_fail_backup(1);
+    editor_scan();
+    ui.tab = UI_TAB_PLUGINS;
+    ui.selection = 0;
+    launch_card_build(&card);
+    modal_open_safety(&ui, &card);
+    if (!render(dir, "preview-safety-card-failed.png", 2.61f, &ui))
+        return 1;
+    ui.modal = UI_MODAL_NONE;
+
+    /* No config at all: locked, and no restore is promised. */
+    reset_scene(&ui);
+    fake_remove_file("ur0:tai/config.txt");
+    fake_remove_file("ur0:tai/config.txt.original");
+    fake_remove_file("ur0:tai/config.txt.session");
+    editor_scan();
+    ui.tab = UI_TAB_PLUGINS;
+    ui.selection = 0;
+    launch_card_build(&card);
+    modal_open_safety(&ui, &card);
+    if (!render(dir, "preview-safety-card-none.png", 2.62f, &ui))
+        return 1;
+    ui.modal = UI_MODAL_NONE;
+
+    /* Unreadable config: locked, with the reason named. */
+    reset_scene(&ui);
+    fake_fail_read_path("ur0:tai/config.txt", 1);
+    editor_scan();
+    ui.tab = UI_TAB_PLUGINS;
+    ui.selection = 0;
+    launch_card_build(&card);
+    modal_open_safety(&ui, &card);
+    if (!render(dir, "preview-safety-card-unreadable.png", 2.63f, &ui))
         return 1;
     ui.modal = UI_MODAL_NONE;
 
@@ -364,7 +405,7 @@ int main(int argc, char **argv)
 
     reset_scene(&ui);
     ui.vitals_scroll = (float)layout_max_scroll();
-    if (!render(dir, "preview-home-plugins.png", 2.7f, &ui))
+    if (!render(dir, "preview-vitals-plugins.png", 2.7f, &ui))
         return 1;
 
     reset_scene(&ui);
@@ -372,7 +413,7 @@ int main(int argc, char **argv)
     editor_scan();
     plugins_scan();
     ui.vitals_scroll = (float)layout_max_scroll();
-    if (!render(dir, "preview-home-plugins-empty.png", 2.8f, &ui))
+    if (!render(dir, "preview-vitals-plugins-empty.png", 2.8f, &ui))
         return 1;
 
     /* The editable ledger. */
@@ -734,7 +775,7 @@ int main(int argc, char **argv)
     plugins_scan();
     ui.tab = UI_TAB_VITALS;
     ui.vitals_scroll = (float)layout_max_scroll();
-    if (!render(dir, "preview-home-plugins-warning.png", 6.0f, &ui))
+    if (!render(dir, "preview-vitals-plugins-warning.png", 6.0f, &ui))
         return 1;
 
     /* ABOUT: identity, the guarded reboot, and the real power-off path. */
@@ -755,6 +796,45 @@ int main(int argc, char **argv)
     fake_set_power_absent();
     metrics_sample_slow();
     if (!render(dir, "preview-about-unknown.png", 7.2f, &ui))
+        return 1;
+
+    /* The ABOUT reboot confirmation, one scene per pending state. */
+    reset_scene(&ui);
+    ui.tab = UI_TAB_ABOUT;
+    int reboot_row = editor_row_for_path("ur0:tai/kubridge.skprx");
+    (void)editor_stage_toggle(reboot_row, 0, err, (int)sizeof(err));
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    modal_open_reboot(&ui, title, body);
+    if (!render(dir, "preview-reboot-draft.png", 7.3f, &ui))
+        return 1;
+
+    reset_scene(&ui);
+    ui.tab = UI_TAB_ABOUT;
+    reboot_row = editor_row_for_path("ur0:tai/kubridge.skprx");
+    (void)editor_stage_toggle(reboot_row, 0, err, (int)sizeof(err));
+    (void)editor_preview_restore(EDITOR_SNAPSHOT_ORIGINAL, err,
+                                 (int)sizeof(err));
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    modal_open_reboot(&ui, title, body);
+    if (!render(dir, "preview-reboot-preview-draft.png", 7.31f, &ui))
+        return 1;
+
+    reset_scene(&ui);
+    ui.tab = UI_TAB_ABOUT;
+    (void)editor_preview_restore(EDITOR_SNAPSHOT_ORIGINAL, err,
+                                 (int)sizeof(err));
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    modal_open_reboot(&ui, title, body);
+    if (!render(dir, "preview-reboot-preview-clean.png", 7.32f, &ui))
+        return 1;
+
+    reset_scene(&ui);
+    ui.tab = UI_TAB_ABOUT;
+    reboot_row = editor_row_for_path("ur0:tai/kubridge.skprx");
+    stage_commit(reboot_row, 0);
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    modal_open_reboot(&ui, title, body);
+    if (!render(dir, "preview-reboot-saved.png", 7.33f, &ui))
         return 1;
 
     return 0;

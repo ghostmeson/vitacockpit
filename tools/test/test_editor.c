@@ -7,6 +7,7 @@
 #include "core/platform.h"
 #include "core/tai_config.h"
 #include "fake_platform.h"
+#include "ui/about_text.h"
 #include "ui/launch_card.h"
 #include "ui/plugin_flow.h"
 #include "ui/plugin_nav.h"
@@ -3449,6 +3450,58 @@ static void test_reboot_gate(void)
     g_editor.too_large = 0;
 }
 
+static void test_about_reboot_text(void)
+{
+    char title[32];
+    char body[256];
+    char err[96];
+
+    fake_reset();
+    editor_scan();
+
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    CHECK(strcmp(title, "REBOOT") == 0);
+    CHECK(strcmp(body, "REBOOT THE CONSOLE?") == 0);
+
+    int row = editor_row_for_path("ur0:tai/kubridge.skprx");
+    CHECK(row >= 0);
+    CHECK(editor_stage_toggle(row, 0, err, (int)sizeof(err)) ==
+          EDITOR_WRITE_OK);
+
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    CHECK(strcmp(title, "REBOOT AND DISCARD") == 0);
+    CHECK(strstr(body, "STAGED PLUGIN CHANGES WILL BE DISCARDED") != NULL);
+
+    CHECK(editor_preview_restore(EDITOR_SNAPSHOT_ORIGINAL, err,
+                                 (int)sizeof(err)) == EDITOR_WRITE_OK);
+    CHECK(editor_preview_discards_draft() == 1);
+
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    CHECK(strcmp(title, "REBOOT AND DISCARD") == 0);
+    CHECK(strstr(body, "RESTORE PREVIEW AND STAGED DRAFT") != NULL);
+
+    editor_cancel_preview();
+    editor_discard_draft();
+
+    CHECK(editor_preview_restore(EDITOR_SNAPSHOT_ORIGINAL, err,
+                                 (int)sizeof(err)) == EDITOR_WRITE_OK);
+    CHECK(editor_preview_discards_draft() == 0);
+
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    CHECK(strstr(body, "RESTORE PREVIEW WILL BE DISCARDED") != NULL);
+    editor_cancel_preview();
+
+    /* A saved batch is the state where a reboot applies the change. */
+    fake_reset();
+    editor_scan();
+    row = editor_row_for_path("ur0:tai/kubridge.skprx");
+    CHECK(stage_commit(row, 0, err, (int)sizeof(err)) == 0);
+
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
+    CHECK(strcmp(title, "REBOOT") == 0);
+    CHECK(strstr(body, "SAVED CONFIG WILL BE APPLIED") != NULL);
+}
+
 static int card_has(const LaunchCard *card, const char *text)
 {
     return strstr(card->body, text) != NULL;
@@ -3518,6 +3571,7 @@ int main(void)
     test_scan_sample();
     test_reboot_gate();
     test_launch_card_copy();
+    test_about_reboot_text();
     test_orphan_old_is_not_deleted();
     test_orphan_scan_failure_is_visible();
     test_missing_file_is_not_active();

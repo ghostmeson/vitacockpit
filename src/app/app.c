@@ -15,6 +15,7 @@
 #include "gfx/layout.h"
 #include "panels/plugins.h"
 #include "panels/registry.h"
+#include "ui/about_text.h"
 #include "ui/launch_card.h"
 #include "ui/modal.h"
 #include "ui/plugin_flow.h"
@@ -135,17 +136,6 @@ static void clear_dock_message(UiState *ui)
     ui->dock_message[0] = '\0';
 }
 
-static void set_about_message(UiState *ui, const char *text)
-{
-    snprintf(ui->about_message, sizeof(ui->about_message), "%s",
-             text == NULL ? "" : text);
-}
-
-static void clear_about_message(UiState *ui)
-{
-    ui->about_message[0] = '\0';
-}
-
 /*
  * Cross on a list row stages it. Nothing is written and no dialog opens: a
  * change is intent until the dock commits it (KD1, R22). A row the editor will
@@ -232,34 +222,13 @@ static void activate_about(UiState *ui)
 {
     const char *block = plugin_flow_reboot_block_reason();
 
-    if (block != NULL) {
-        set_about_message(ui, block);
+    if (block != NULL)
         return;
-    }
 
-    clear_about_message(ui);
+    char title[32];
+    char body[256];
 
-    const char *title = "REBOOT";
-    const char *body = "REBOOT THE CONSOLE?";
-
-    if (editor_preview_active()) {
-        title = "REBOOT AND DISCARD";
-
-        if (editor_preview_discards_draft())
-            body = "THE RESTORE PREVIEW AND STAGED DRAFT WILL BE DISCARDED. "
-                   "APPLY THE RESTORE WITH DISCARD DRAFT & RESTORE IN "
-                   "PLUGINS. REBOOT WITHOUT APPLYING?";
-        else
-            body = "THE RESTORE PREVIEW WILL BE DISCARDED. APPLY IT WITH "
-                   "CONFIRM & REBOOT IN PLUGINS. REBOOT WITHOUT APPLYING?";
-    } else if (editor_draft_dirty()) {
-        title = "REBOOT AND DISCARD";
-        body = "STAGED PLUGIN CHANGES WILL BE DISCARDED. APPLY THEM WITH "
-               "CONFIRM & REBOOT IN PLUGINS. REBOOT WITHOUT APPLYING?";
-    } else if (g_editor.pending_count > 0) {
-        body = "THE SAVED CONFIG WILL BE APPLIED AT NEXT BOOT. REBOOT NOW?";
-    }
-
+    about_reboot_text(title, sizeof(title), body, sizeof(body));
     modal_open_reboot(ui, title, body);
 }
 
@@ -426,7 +395,6 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
 
     case PLUGIN_NAV_TAB_LEFT:
         clear_dock_message(ui);
-        clear_about_message(ui);
         plugin_flow_focus_list(ui);
         ui->tab = plugin_nav_tab_step(ui->tab, -1);
         if (ui->tab == UI_TAB_PLUGINS) {
@@ -438,7 +406,6 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
 
     case PLUGIN_NAV_TAB_RIGHT:
         clear_dock_message(ui);
-        clear_about_message(ui);
         plugin_flow_focus_list(ui);
         ui->tab = plugin_nav_tab_step(ui->tab, 1);
         if (ui->tab == UI_TAB_PLUGINS) {
@@ -598,14 +565,9 @@ int app_run(void)
          * the confirmation is open closes it with the reason instead of
          * letting a stale open confirmation send a request.
          */
-        if (ui.modal == UI_MODAL_REBOOT) {
-            const char *block = plugin_flow_reboot_block_reason();
-
-            if (block != NULL) {
-                close_modal(&ui);
-                set_about_message(&ui, block);
-            }
-        }
+        if (ui.modal == UI_MODAL_REBOOT &&
+            plugin_flow_reboot_block_reason() != NULL)
+            close_modal(&ui);
 
         vita2d_start_drawing();
         vita2d_clear_screen();

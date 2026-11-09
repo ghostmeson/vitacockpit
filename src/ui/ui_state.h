@@ -47,9 +47,6 @@ typedef struct {
     int dock_choice;
     char dock_message[128];
 
-    /* The ABOUT page's inline reboot reason; empty when the gate allows it. */
-    char about_message[128];
-
     UiModal modal;
     char modal_title[64];
     char modal_body[512];

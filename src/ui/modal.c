@@ -16,6 +16,7 @@
 #define MODAL_KEY_Y 206.0f
 #define MODAL_BODY_W (MODAL_W - 2.0f * MODAL_PAD)
 #define MODAL_MAX_LINES 10
+#define REBOOT_MAX_LINES 6
 /* The glyph box is exactly LINE_H; two pixels of leading keep lines apart. */
 #define MODAL_LINE_GAP 2.0f
 
@@ -147,8 +148,12 @@ void modal_draw(const UiState *ui)
 
     theme_panel(r, ui->modal_title, C_YELLOW, CHROME_SATELLITE);
 
-    draw_wrapped(ui->modal_body, r.x + MODAL_PAD, r.y + MODAL_BODY_Y,
-                 MODAL_BODY_W, PX_MICRO, C_WHITE, MODAL_MAX_LINES);
+    if (ui->modal == UI_MODAL_REBOOT)
+        draw_wrapped(ui->modal_body, r.x + MODAL_PAD, r.y + MODAL_BODY_Y,
+                     MODAL_BODY_W, PX_LABEL, C_WHITE, REBOOT_MAX_LINES);
+    else
+        draw_wrapped(ui->modal_body, r.x + MODAL_PAD, r.y + MODAL_BODY_Y,
+                     MODAL_BODY_W, PX_MICRO, C_WHITE, MODAL_MAX_LINES);
 
     font_text(ui->modal == UI_MODAL_REBOOT ? "CROSS CONFIRM   CIRCLE CANCEL"
                                            : "CROSS CLOSE",

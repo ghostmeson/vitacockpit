@@ -623,6 +623,6 @@ synthetic.
 | CORE, CPU and memory | [preview-healthy.png](preview-healthy.png) |
 
 The HOME images ([preview-healthy.png](preview-healthy.png),
-[preview-home-plugins.png](preview-home-plugins.png), and
-[preview-home-plugins-warning.png](preview-home-plugins-warning.png)) are
+[preview-vitals-plugins.png](preview-vitals-plugins.png), and
+[preview-vitals-plugins-warning.png](preview-vitals-plugins-warning.png)) are
 referenced by the project `README.md`.

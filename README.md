@@ -1,46 +1,36 @@
 # COCKPIT
 
-**A live system dashboard for the PS Vita, built to show only numbers that are
-real.** Cyberpunk 2077's in-game HUD is the visual reference: thin rules, one
-chamfered corner, small tracked labels over large values. One userland app, no
-plugins of its own.
+**A taiHEN `config.txt` plugin manager for the PS Vita, built to show only
+numbers that are real.** COCKPIT opens on the ledger: it lists every plugin in
+the active config, shows what is running now and what will run after the next
+boot, and stages enables and disables as one reviewed batch. VITALS is the
+second tab, ABOUT is the third. Cyberpunk 2077's in-game HUD is the visual
+reference: thin rules, one chamfered corner, small tracked labels over large
+values. One userland app, no plugins of its own.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-PS%20Vita%203.65%20Enso-22d3ee)
 
-![COCKPIT HOME](screenshots/01-home.png)
-
-COCKPIT reads the machine it is running on — CPU, memory, storage, power,
-identity, frame time — and shows the taiHEN plugins the boot actually activated.
-A second tab turns that ledger into a transaction: stage a batch in memory,
-review it in a pinned dock, write once, reboot or save for later.
+![COCKPIT PLUGINS](screenshots/01-plugins.png)
 
 It installs nothing outside its own VPK and never adds a COCKPIT line to
 `config.txt`. The manager only edits lines that are already there.
 
 ## What it shows
 
-**CORE** — per-core CPU load (C0–C3), the average across active cores,
-context-switch and wakeup rates, a 20-second trace, and the free USER, CDRAM and
-PHY memory pools.
+**PLUGINS** — the landing screen. Every path in the active config, grouped
+KERNEL / SYSTEM / SYSTEM APPS / ALL TITLES, with the current load state and the
+next-boot state on every row.
 
-**POWER** — battery percentage, charging state, temperature, voltage, charge
-cycle count, and health.
+**VITALS** — the machine readout: CORE, POWER, STORAGE, SYSTEM, the plugin
+summary, and the pinned FRAME strip.
 
-**STORAGE** — `ux0:` and `uma0:` used / total, with the unit chosen from each
-volume's size.
-
-**SYSTEM** — the firmware string the API reports, app run time, and device
-model.
-
-**FRAME** — measured FPS, frame time, and a 20-second trace.
-
-**PLUGINS** — a summary of the launch set by load target on HOME, and the full
-ledger on its own tab.
+**ABOUT** — the app title, a short description, the version and build, the
+guarded REBOOT, and the console's real power-off path.
 
 ## The plugin manager
 
-![COCKPIT PLUGINS](screenshots/03-plugin-ledger.png)
+![The plugin ledger](screenshots/01-plugins.png)
 
 It resolves the active config the way taiHEN does — `ux0:` first, `ur0:`
 fallback — and names the file it used. Every path is listed, active or
@@ -51,7 +41,7 @@ Each row carries two separate facts: what is running now (`LOADED`,
 `NOT LOADED`, `MIXED`, `MISSING`, `NOT REACHED`, `BOOT`, `LOCKED`) and what will
 run after the next boot (`NEXT ON` / `NEXT OFF`).
 
-![Staged batch in the dock](screenshots/04-plugin-draft.png)
+![Staged batch in the dock](screenshots/03-plugin-draft.png)
 
 Cross stages a row. Nothing is written and no dialog opens. The dock lists the
 pending enables and disables and offers `DISCARD`, `SAVE, REBOOT LATER`, and
@@ -66,13 +56,39 @@ A restore shows a plugin-level diff before it writes anything, and
 - `taihen.skprx`, `henkaku.skprx`, `yamt.skprx`, and `henkaku.suprx` are locked;
   a batch or restore that would drop one is refused and the path is named.
 - `boot_config.txt` is never opened, read, copied, or written.
-- Reboot is refused below 20 % while discharging, or when the power read is
-  invalid. The save path stays available.
+- Reboot is refused below 20 % while discharging, when the power read is
+  invalid, or in a repair state (`REPAIR WITH UNDO FIRST` / `RECOVERY FAILED`).
+  The save path stays available.
 - Writes go through a sibling swap: write `.new`, verify, move the original to
   `.old`, move `.new` into place, read back. A failed step restores the original
   and names the stage.
 - Snapshots are `config.txt.original` (once, never overwritten),
   `config.txt.session` (each launch), and `config.txt.undo` (one step).
+
+## First launch
+
+![Launch safety card](screenshots/05-launch-card.png)
+
+Every launch opens on a safety card that names the active `config.txt`, the
+backup this session wrote, and why editing through COCKPIT is safer than a
+manual edit. It is a gate, not a nag: Cross or Circle dismisses it, and it
+returns next session because the app stores no acknowledgement.
+
+The card reports what actually happened. If the session snapshot could not be
+written it says so; if the config is unreadable or too large it says editing is
+locked instead of promising a restore point.
+
+## ABOUT
+
+![ABOUT](screenshots/06-about.png)
+
+ABOUT identifies the build (`1.01`, build number) and offers the only console
+action: REBOOT, behind a confirmation. A staged batch or a restore preview is
+discarded only after the confirmation says so; a saved batch is applied at the
+next boot. The page also prints the real power-off path, because userland cannot
+request a shutdown.
+
+![Reboot confirmation](screenshots/07-reboot-confirm.png)
 
 ## Every number is real
 
@@ -88,7 +104,7 @@ The same rule covers failures. A frozen or regressed cumulative counter renders
 `--` for that rate, not `0/S`. A `uma0:` that does not exist reads `N/A`; one
 that exists but cannot be read shows its return code.
 
-![Failed CPU read](screenshots/07-core-unavailable.png)
+![Failed CPU read](screenshots/08-core-unavailable.png)
 
 ## Install
 
@@ -108,11 +124,11 @@ restricted variant; `uma0:` then reads `N/A`.
 
 | Input | Action |
 |---|---|
-| Sticks / D-pad | Scroll the panel area |
-| D-pad up / down | Move the row selection |
-| L / R | Switch between HOME and PLUGINS |
-| Cross | Stage the selected row / activate a dock action |
-| Circle | Back out of the dock or a preview |
+| L / R | Switch PLUGINS, VITALS, ABOUT (wraps at either end) |
+| Sticks / D-pad | Scroll VITALS or the PLUGINS list |
+| D-pad up / down | Move the plugin row selection |
+| Cross | Stage a row / activate a dock action / open the ABOUT reboot confirmation |
+| Circle | Back out of the dock or a preview / cancel the reboot |
 | Triangle | Toggle dock focus |
 | Down from the last row | Enter the dock |
 
