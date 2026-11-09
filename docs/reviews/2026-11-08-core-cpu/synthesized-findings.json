@@ -1,0 +1,432 @@
+{
+  "run_id": "20261108-105324-38da7151",
+  "scope": {
+    "mode": "standalone",
+    "base": "HEAD^",
+    "head_sha": "1910e0fbf2546b21753039247a7418628dc62618",
+    "branch": "review/codebase-health",
+    "tree_is_reviewed_head": true
+  },
+  "stage": "Stage 5 merge + Stage 5b steps 1-3",
+  "intent": {
+    "summary": "Replace CORE's memory-only panel with real userland CPU activity from sceKernelGetSystemInfo: per-core load, active-core average, context-switch/wakeup rates, and a fixed 0-100% trace. Keep the memory pools; do not add a kernel plugin or fabricate GPU load/applied clocks. Must fail closed to \"--\" when the scheduler counters are unavailable or the idle-clock unit is wrong.",
+    "confidence": "explicit"
+  },
+  "primary_findings": [
+    {
+      "#": 1,
+      "autofix_class": "manual",
+      "confidence": 75,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.c:77-88 -- \"The idle clock cannot have advanced further than wall time. If it did, the unit is not microseconds ...\" / if (idle > elapsed) { ... if (idle > elapsed + slack) return CPU_CORE_UNKNOWN; -- the only unit check in the tree, and it has no opposite-direction branch",
+        "vita-cockpit/src/core/metrics.c:41-44 -- \"A wrong unit is orders of magnitude larger and still fails closed.\" Only a finer unit makes the idle delta larger; a coarser unit makes it smaller and passes.",
+        "vita-cockpit/src/core/metrics.c:93-99 -- busy = 100.0 - idle*100/elapsed; a milliseconds counter yields 100 - 100*100/100000 = 99.9 %, rounded to 100 and clamped there.",
+        "vita-cockpit/src/core/platform.h:83-85 -- \"The sampling policy refuses a sample where an idle delta exceeds the elapsed time, so a unit mismatch renders \\\"--\\\" instead of a fabricated percentage.\"",
+        "vita-cockpit/src/platform/platform_psp2.c:165-166 -- \"core/metrics.c rejects a sample whose idle delta exceeds the elapsed time, so a wrong unit becomes \\\"--\\\", never a percentage.\"",
+        "vita-cockpit/docs/DECISIONS.md:1997 (D103) -- \"If an idle delta exceeds the elapsed time, the sample is refused and the panel renders `--`, so a unit mismatch cannot become a fabricated percentage.\"",
+        "vita-cockpit/docs/ARCHITECTURE.md:320 -- the [C] row claims \"the adapter rejects a delta larger than elapsed time\" and points at platform_psp2.c, which holds no such check",
+        "PROJECTS.md:26 -- \"`[C]` `sceKernelGetSystemInfo` and the microsecond `idleClock` unit are unconfirmed on this console; a unit mismatch renders `--`.\""
+      ],
+      "file": "vita-cockpit/src/core/metrics.c",
+      "first_evidence": "vita-cockpit/src/core/metrics.c:77-88 -- \"The idle clock cannot have advanced further than wall time. If it did, the unit is not microseconds ...\" / if (idle > elapsed) { ... if (idle > elapsed + slack) return CPU_CORE_UNKNOWN; -- the only unit check in the tree, and it has no opposite-direction branch",
+      "independent_reviewers": [
+        "project-standards",
+        "correctness"
+      ],
+      "line": 82,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": true,
+      "reviewers": [
+        "project-standards",
+        "correctness"
+      ],
+      "severity": "P1",
+      "suggested_fix": "Pick one and make code and docs agree. (a) Minimal: correct the guarantee in vita-cockpit/src/core/platform.h:83-85, vita-cockpit/src/platform/platform_psp2.c:165-166, vita-cockpit/docs/DECISIONS.md:1997 (D103), vita-cockpit/docs/ARCHITECTURE.md:320, PROJECTS.md:26 and the metrics.c comment to say only a counter that advances faster than wall time is rejected, and add to PROJECT.md's hardware checklist: \"a static ~100 % at idle means idleClock is coarser than microseconds; record it and treat CPU as unavailable\". (b) Behavioural: also add the opposite-direction plausibility guard - if every active core reads exactly 100 % for five consecutive windows (0.5 s), refuse the sample and render `--` until the reading drops. Assumption: a false `--` is the safe direction under the project rule that a missing value beats a fabricated one.",
+      "title": "Idle-clock unit guard is one-sided but documented as fail-closed",
+      "why_it_matters": "If `cpuInfo[].idleClock` is not microseconds on this console, CORE does not fall back to `--`. The only unit check is one-directional: `cpu_pct_from_idle()` rejects an idle delta that exceeds the elapsed time, so a counter that advances faster than wall time is caught, but a coarser counter (milliseconds, seconds, a tick larger than 1 us) passes, every per-core delta becomes a small fraction of elapsed, and the ratio renders a permanent ~100 % - the exact fabricated number D6/D103 forbid and the exact static-100 % symptom PROJECT.md's hardware checklist says must never appear, indistinguishable from a genuinely saturated machine. The stated intent for this change is to fail closed when the idle-clock unit is wrong, and four comments and docs promise a full guarantee the arithmetic does not provide. The two reviewers split on severity (P1 from project-standards against the intent contract, P2 from correctness because the unit itself is still [C] on hardware); the consequence if it is wrong is a fabricated hero number, so the cautious rating stands.",
+      "reconciled_from": [
+        "project-standards: Idle-clock unit guard is one-sided but documented as fail-closed (P1)",
+        "correctness: Wrong-unit guard only detects an idle clock faster than microseconds (P2, helper-suppressed at anchor 50, merged on the same defect and fix path)"
+      ]
+    },
+    {
+      "#": 2,
+      "autofix_class": "manual",
+      "confidence": 100,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.c:178-183 -- if (in.ctx_switches >= s_prev_cpu.ctx_switches) g_metrics.cpu_ctx_per_s = cpu_rate(...); (same for wakeups) -- when the test fails no assignment happens and no flag records it",
+        "vita-cockpit/src/core/metrics.c:122-123 -- g_metrics.cpu_ctx_per_s = 0; g_metrics.cpu_wake_per_s = 0; re-seeded every sample, so the value left by a rejected delta is a plausible zero",
+        "vita-cockpit/src/core/metrics.c:173 -- g_metrics.cpu_valid = 1; set from `cores > 0` alone, independent of whether either rate delta was accepted",
+        "vita-cockpit/src/platform/platform_psp2.c:189-193 -- out->ctx_switches += info.cpuInfo[i].threadSwitchCount; out->wakeups += info.cpuInfo[i].comesOutOfIdleCount; summed over the cores active at read time, so a shrinking activeCpuMask or a 32-bit wrap makes the total regress",
+        "vita-cockpit/src/platform/platform_psp2.c:192-207 -- `ok` requires only a nonzero idle clock, so zero-filled or frozen count fields still produce a sample the policy treats as valid",
+        "vita-cockpit/src/panels/core.c:88-92 -- if (g_metrics.cpu_valid) { snprintf(right, sizeof(right), \"CTX %d/S  WAKE %d/S\", ...); } -- cpu_valid is the caption's only gate",
+        "vita-cockpit/src/core/metrics.h:38 -- \"Every field has a matching `*_valid` flag. A panel must render \\\"--\\\" when the flag is clear\"",
+        "vita-cockpit/src/core/platform.h:87 -- \"`ctx_switches` and `wakeups` are cumulative counts across the active cores.\"",
+        "vitasdk/arm-vita-eabi/include/psp2/kernel/threadmgr/thread.h:279-280 -- SceUInt32 comesOutOfIdleCount; SceUInt32 threadSwitchCount; (32-bit, so the summed counter can decrease)",
+        "README.md:194 -- \"A number the platform cannot report renders `--`; it is never guessed or substituted with zero.\"",
+        "vita-cockpit/docs/DECISIONS.md:1997 -- the fail-closed promise names the idle-clock unit and activeCpuMask, but not the two cumulative rate counters"
+      ],
+      "file": "vita-cockpit/src/core/metrics.c",
+      "first_evidence": "vita-cockpit/src/core/metrics.c:178-183 -- if (in.ctx_switches >= s_prev_cpu.ctx_switches) g_metrics.cpu_ctx_per_s = cpu_rate(...); (same for wakeups) -- when the test fails no assignment happens and no flag records it",
+      "independent_reviewers": [
+        "maintainability",
+        "project-standards",
+        "adversarial"
+      ],
+      "line": 178,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": true,
+      "reviewers": [
+        "maintainability",
+        "project-standards",
+        "adversarial"
+      ],
+      "severity": "P2",
+      "suggested_fix": "Add `int cpu_ctx_valid; int cpu_wake_valid;` to the CPU block in Metrics, clear them with the other CPU fields at the top of sample_cpu(), set each only inside its `>=` branch, and have draw_caption() render `--` for whichever field is invalid (matching the per-field POWER pattern). Optionally mirror the `have_idle` gate in platform_read_cpu with a `have_counters` check if a fully absent pair should blank the whole row. Add zero, unchanged and backwards-counter cases to tools/test/test_metrics.c, and pin the shrinking-mask case.",
+      "title": "Fabricated CTX/WAKE 0/S when the cumulative counters are absent or regress",
+      "why_it_matters": "CORE prints `CTX 0/S  WAKE 0/S` as if it had measured them whenever the CPU sample is otherwise valid. `sample_cpu()` zeroes both rates at the top of every sample and then skips the assignment when a cumulative counter has not advanced or has gone backwards; `cpu_valid` is decided by the idle clocks alone, so the caption's only validity gate stays open. The adapter sums the two counters over the cores active at read time, so a narrowing `activeCpuMask` or a 32-bit `threadSwitchCount`/`comesOutOfIdleCount` wrap makes the total fall, and zero-filled or frozen counters from firmware that does not populate them read as a measured zero. On a running Vita zero context switches per second is impossible, so the hero panel shows an invented number - exactly the zero-substitution AGENTS.md rule 6, README.md:194 and the Metrics contract forbid. Three reviewers reached the same defect and fix path; the fix is the per-field validity pattern the POWER panel already uses.",
+      "reconciled_from": [
+        "maintainability: Refused CPU rate deltas render as measured 0/S (P2)",
+        "project-standards: CTX/WAKE print a fabricated 0/S when the cumulative delta regresses (P2)",
+        "adversarial: Fabricated 0/S when scheduler counters are absent or roll back (P2)"
+      ]
+    },
+    {
+      "#": 3,
+      "autofix_class": "gated_auto",
+      "confidence": 75,
+      "evidence": [
+        "vita-cockpit/src/panels/core.c:56-61 -- int valid = pct != CPU_CORE_UNKNOWN; if (valid) snprintf(value, sizeof(value), \"%d%%\", pct); else snprintf(value, sizeof(value), \"%s\", THEME_ABSENT);",
+        "vita-cockpit/src/panels/core.c:88-96 -- if (g_metrics.cpu_valid) { \"CPU LOAD AVG %d%%\" / \"CTX %d/S  WAKE %d/S\" } else { \"CPU LOAD AVG %s\" / \"CTX %s  WAKE %s\", THEME_ABSENT };",
+        "vita-cockpit/tools/test/run.sh:20-25 -- the host test links only test_metrics.c, fake_platform.c, history.c, metrics.c and plugins.c; no panels/ source is compiled, so draw_cpu_row and draw_caption cannot be covered by any host check.",
+        "vita-cockpit/tools/preview/preview.c:49-67 -- seed_trace sets four valid per-core loads, and no scene calls fake_set_cpu_absent(); the only call site is test_metrics.c:142, which asserts g_metrics fields, not rendering."
+      ],
+      "file": "vita-cockpit/src/panels/core.c",
+      "first_evidence": "vita-cockpit/src/panels/core.c:56-61 -- int valid = pct != CPU_CORE_UNKNOWN; if (valid) snprintf(value, sizeof(value), \"%d%%\", pct); else snprintf(value, sizeof(value), \"%s\", THEME_ABSENT);",
+      "independent_reviewers": [
+        "testing"
+      ],
+      "line": 61,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": true,
+      "reviewers": [
+        "testing"
+      ],
+      "severity": "P2",
+      "suggested_fix": "Add a preview scene that calls fake_set_cpu_absent() (and a second with fake_set_cpu_mask(0x5)) before metrics_sample_slow(), so the THEME_ABSENT branch renders and is inspectable, mirroring the uma0-absent default that exercises STORAGE's \"--\". For an automated gate, extract the per-core and caption formatting into a pure helper that tools/test links, and assert it emits \"--\" for CPU_CORE_UNKNOWN and for cpu_valid == 0.",
+      "title": "No test or preview renders the CPU fail-closed \"--\" path",
+      "why_it_matters": "The intent promises the panel falls back to \"--\" when the scheduler counters are missing or the idle-clock unit is wrong, but only the policy layer is asserted. If the per-core or caption fallback regressed (for example printing the zeroed percentage), every host check would still pass and no preview scene would reveal it, so the first evidence would come from the user's console run. The project already treats a fabricated number as worse than a missing one, which makes this the one display contract that should be proven before flashing."
+    },
+    {
+      "#": 4,
+      "autofix_class": "gated_auto",
+      "confidence": 100,
+      "evidence": [
+        "vita-cockpit/docs/ARCHITECTURE.md:320 -- | `cpuInfo[].idleClock` advances in microseconds | `[C]` the header does not state the unit; the adapter rejects a delta larger than elapsed time | `platform_psp2.c` |",
+        "vita-cockpit/docs/ARCHITECTURE.md:333 -- \"If a `[C]` claim is corrected on hardware, correct it in the file its Where column names.\"",
+        "vita-cockpit/src/core/metrics.c:82-88 -- if (idle > elapsed) { ... if (idle > elapsed + slack) return CPU_CORE_UNKNOWN; the only delta-versus-elapsed rejection in the tree",
+        "vita-cockpit/src/platform/platform_psp2.c:165-166 -- the adapter's own comment already credits core/metrics.c with the rejection"
+      ],
+      "file": "vita-cockpit/docs/ARCHITECTURE.md",
+      "first_evidence": "vita-cockpit/docs/ARCHITECTURE.md:320 -- | `cpuInfo[].idleClock` advances in microseconds | `[C]` the header does not state the unit; the adapter rejects a delta larger than elapsed time | `platform_psp2.c` |",
+      "independent_reviewers": [
+        "project-standards"
+      ],
+      "line": 320,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": false,
+      "reviewers": [
+        "project-standards"
+      ],
+      "severity": "P3",
+      "suggested_fix": "Reword the Evidence cell to name both files, e.g. \"the header does not state the unit; `core/metrics.c` (cpu_pct_from_idle) rejects a delta larger than elapsed time\", and list `core/metrics.c` in the Where column alongside `platform_psp2.c`.",
+      "title": "Docs place the idle-unit rejection in the adapter, not the policy",
+      "why_it_matters": "The `[C]` claim table exists so a hardware correction lands in the file its Where column names, and ARCHITECTURE.md:333 makes that promise explicit. This row says \"the adapter rejects a delta larger than elapsed time\" and points at `platform_psp2.c`, but `platform_read_cpu` contains no such check; the rejection is `cpu_pct_from_idle()` in `core/metrics.c`. A maintainer correcting the idle-clock unit after a console session would edit the adapter and leave the actual guard untouched, so the routing the document promises fails exactly when it is needed."
+    },
+    {
+      "#": 5,
+      "autofix_class": "gated_auto",
+      "confidence": 100,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.h:56 -- unsigned cpu_active_mask;",
+        "vita-cockpit/src/core/metrics.c:121,174 -- g_metrics.cpu_active_mask = 0; / g_metrics.cpu_active_mask = mask; (two writes, no reader in src/ or tools/)",
+        "vita-cockpit/src/core/metrics.c:140,145 -- unsigned mask = in.active_mask & s_prev_cpu.active_mask; ... if ((mask & (1u << i)) == 0) continue; (the recorded mask is the candidate, not the measured set)",
+        "vita-cockpit/tools/fake/fake_platform.h:25 -- void fake_set_cpu_activity(int ctx_per_s, int wake_per_s);",
+        "vita-cockpit/tools/fake/fake_platform.c:137 -- void fake_set_cpu_activity(int ctx_per_s, int wake_per_s)  /* the only other match in the tree */",
+        "vita-cockpit/tools/test/test_metrics.c:87-88 -- CHECK(g_metrics.cpu_ctx_per_s == 840); CHECK(g_metrics.cpu_wake_per_s == 230); the rates are cpu_reset() defaults, not a value the test sets",
+        "AGENTS.md rule 9 -- \"No dead code, no unused links. Do not link a library the source never calls. Do not keep a function nothing invokes.\"",
+        "callsite completeness: text search over vita-cockpit/ only; no symbol-aware index was available"
+      ],
+      "file": "vita-cockpit/src/core/metrics.h",
+      "first_evidence": "vita-cockpit/src/core/metrics.h:56 -- unsigned cpu_active_mask;",
+      "independent_reviewers": [
+        "correctness",
+        "maintainability",
+        "project-standards"
+      ],
+      "line": 56,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": false,
+      "reviewers": [
+        "correctness",
+        "maintainability",
+        "project-standards"
+      ],
+      "severity": "P3",
+      "suggested_fix": "Delete `Metrics.cpu_active_mask` and its two writes (metrics.c:121 and :174); per-core absence is already carried by CPU_CORE_UNKNOWN and the aggregate by cpu_valid. Delete `fake_set_cpu_activity` from tools/fake/fake_platform.h and fake_platform.c, or make it the only source of the tested rates by calling `fake_set_cpu_activity(900, 250)` in test_cpu_usage() and asserting 900/250. If a mask consumer is intended, assign only the cores that contributed (`measured_mask`) and read it in the panel in this change.",
+      "title": "Added CPU validity mask and CPU rate test hook have no consumer",
+      "why_it_matters": "The diff adds two pieces of CPU surface nothing consumes. `Metrics.cpu_active_mask` is written twice and read nowhere, and it records the candidate mask (`in.active_mask & s_prev_cpu.active_mask`) rather than the cores that actually produced a percentage, because the loop skips a core whose idle delta went backwards or failed the unit check - a later panel or test that trusts it would treat unmeasured cores as measured. `fake_set_cpu_activity()` is declared and defined but never called, so the fake advertises a rate knob nothing exercises while the rate assertions silently rely on `cpu_reset()`'s 840/230 defaults. AGENTS.md rule 9 forbids keeping code nothing invokes, and unused state on the shared Metrics contract invites exactly that kind of misuse.",
+      "reconciled_from": [
+        "correctness: Added CPU validity mask and fake rate hook have no consumer (P3)",
+        "maintainability: cpu_active_mask written but never read (P3)",
+        "project-standards: CPU test hook is never called; mask field is never read (P3)",
+        "maintainability: Unused fake_set_cpu_activity() test setter (P3)"
+      ]
+    },
+    {
+      "#": 6,
+      "autofix_class": "gated_auto",
+      "confidence": 100,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.h:98 -- /* ~10 Hz. Memory, storage, power, identity, wall clock. */",
+        "vita-cockpit/src/core/metrics.c:311 -- sample_cpu(); added to metrics_sample_slow() by this diff",
+        "vita-cockpit/docs/ARCHITECTURE.md cadence table -- | 10 Hz | memory, CPU, storage, power, identity, clock |"
+      ],
+      "file": "vita-cockpit/src/core/metrics.h",
+      "first_evidence": "vita-cockpit/src/core/metrics.h:98 -- /* ~10 Hz. Memory, storage, power, identity, wall clock. */",
+      "independent_reviewers": [
+        "maintainability"
+      ],
+      "line": 98,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": false,
+      "reviewers": [
+        "maintainability"
+      ],
+      "severity": "P3",
+      "suggested_fix": "Change the comment to `/* ~10 Hz. CPU, memory, storage, power, identity, wall clock. */` so it matches the cadence table in docs/ARCHITECTURE.md.",
+      "title": "metrics_sample_slow() contract comment omits CPU",
+      "why_it_matters": "The header contract still says a slow sample reads \"Memory, storage, power, identity, wall clock\", but the diff made CPU load \u2014 now the hero number \u2014 the sixth reading. Headers are contracts in this workspace (AGENTS.md rule 8), so the one comment a caller checks to learn what a 10 Hz tick refreshes is wrong about the most visible reading, and the docs' cadence table already disagrees with it."
+    },
+    {
+      "#": 7,
+      "autofix_class": "gated_auto",
+      "confidence": 75,
+      "evidence": [
+        "agent-wiki/13-fact-check.md:88 -- | CPU readout | [V] host tests cover per-core percentages, the active mask, the active-core average, context-switch/wakeup rates, a failed read leaving the trace alone, and the fixed 0-100 % trace; ...",
+        "vita-cockpit/tools/test/test_metrics.c:89-90 -- CHECK(g_metrics.hist_cpu.len == 1); CHECK(history_at(&g_metrics.hist_cpu, 0) == 13.0f); these are the only trace assertions and neither touches the axis.",
+        "vita-cockpit/src/panels/core.c:115-116 -- theme_sparkline(&g_metrics.hist_cpu, x, r.y + CORE_TRACE_Y, w, CORE_TRACE_H, C_YELLOW, 0.0f, 100.0f); the literals are in a file tools/test/run.sh does not link.",
+        "vita-cockpit/docs/DECISIONS.md:2000 and PROJECTS.md:44 repeat the same [V] claim for the fixed-scale trace."
+      ],
+      "file": "agent-wiki/13-fact-check.md",
+      "first_evidence": "agent-wiki/13-fact-check.md:88 -- | CPU readout | [V] host tests cover per-core percentages, the active mask, the active-core average, context-switch/wakeup rates, a failed read leaving the trace alone, and the fixed 0-100 % trace; ...",
+      "independent_reviewers": [
+        "testing"
+      ],
+      "line": 88,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": false,
+      "reviewers": [
+        "testing"
+      ],
+      "severity": "P3",
+      "suggested_fix": "Either record the sparkline's lo/hi arguments in the preview shim (tools/preview/vita2d_soft.c) and add a scene assertion for 0/100, or reword the three claims to what is actually demonstrated: \"host tests cover the trace data; the preview renders it on the fixed 0-100 % axis\".",
+      "title": "Docs claim [V] coverage of a trace axis no test asserts",
+      "why_it_matters": "The verification table marks the fixed 0-100 % trace as host-test verified, but no host test observes the axis: the only trace assertions are the ring length and the newest value, and the 0/100 literals live in a panel file the test harness never links. A future autoscale change would leave every check green while the docs still read [V], so the project's verified tag would be claiming a guarantee nothing enforces."
+    },
+    {
+      "#": 8,
+      "autofix_class": "gated_auto",
+      "confidence": 75,
+      "evidence": [
+        "PROJECTS.md:26 -- | ... | Flash `cockpit-v01.00-b153.vpk`; confirm CPU load moves and is not a static 100 %/`--`; then run the remaining dashboard/manager checklist | ... |",
+        "AGENTS.md project tracker table -- | Next | the single next action, not a list |"
+      ],
+      "file": "PROJECTS.md",
+      "first_evidence": "PROJECTS.md:26 -- | ... | Flash `cockpit-v01.00-b153.vpk`; confirm CPU load moves and is not a static 100 %/`--`; then run the remaining dashboard/manager checklist | ... |",
+      "independent_reviewers": [
+        "project-standards"
+      ],
+      "line": 26,
+      "owner": "downstream-resolver",
+      "pre_existing": false,
+      "requires_verification": false,
+      "reviewers": [
+        "project-standards"
+      ],
+      "severity": "P3",
+      "suggested_fix": "Reduce the Next cell to the first action (\"Flash `cockpit-v01.00-b153.vpk` and confirm CPU load moves and is not a static 100 %/`--`\") and move \"run the remaining dashboard/manager checklist\" into Notes with a pointer to vita-cockpit/docs/PROJECT.md \u00a75.",
+      "title": "PROJECTS.md Next cell lists three actions, not one",
+      "why_it_matters": "The board rule is that Next holds the single next action, but this row packs flash, CPU verification, and the remaining checklist into one semicolon chain. A board whose Next cells are checklists stops answering the question it exists for \u2014 what to do next \u2014 without re-reading the whole cell, and the superseded b150 row carried the same shape, so the pattern is spreading rather than being corrected. Collapsing the cell to the flash-and-confirm step and moving the rest of the checklist to Notes or the project doc restores the rule."
+    }
+  ],
+  "pre_existing_findings": [
+    {
+      "autofix_class": "gated_auto",
+      "confidence": 75,
+      "evidence": [
+        "agent-wiki/examples/cockpit/platform.h:54 -- } PlatformClocks;",
+        "agent-wiki/examples/cockpit/platform.h:25 -- #define PLATFORM_STORAGE_COUNT 3",
+        "grep -c 'PlatformCpu|platform_read_cpu' agent-wiki/examples/cockpit/platform.h agent-wiki/examples/cockpit/platform_psp2.c -> 0 and 0, while vita-cockpit/src/core/platform.h:77 declares PLATFORM_CPU_COUNT and :90-97 PlatformCpu",
+        "agent-wiki/12-projects.md:16 -- \"Source copies are in [`examples/`](examples/), including `examples/cockpit/` for the port, the adapter, the panel contract, and the layout table.\"",
+        "provenance: 5397df1 Import the PS Vita homebrew workspace - the only commit touching agent-wiki/examples/cockpit/"
+      ],
+      "file": "agent-wiki/examples/cockpit/platform.h",
+      "first_evidence": "agent-wiki/examples/cockpit/platform.h:54 -- } PlatformClocks;",
+      "independent_reviewers": [
+        "project-standards"
+      ],
+      "line": 54,
+      "owner": "downstream-resolver",
+      "pre_existing": true,
+      "requires_verification": false,
+      "reviewers": [
+        "project-standards"
+      ],
+      "severity": "P3",
+      "suggested_fix": "Regenerate `agent-wiki/examples/cockpit/platform.h` and `platform_psp2.c` from `vita-cockpit/src/core/platform.h` and `vita-cockpit/src/platform/platform_psp2.c` (the copies are advertised as verbatim), so the example carries `PlatformCpu`/`platform_read_cpu` and drops `PlatformClocks`.",
+      "title": "agent-wiki example copies still show the clock-era port",
+      "why_it_matters": "The workspace rule says a project change updates `12-projects.md` **and** the source copies under `agent-wiki/examples/`, and `12-projects.md:16` still advertises `examples/cockpit/` as the reference for \"the port, the adapter\". Those copies predate D99: they declare `PlatformClocks`, three storage mounts, and neither `PlatformCpu` nor `platform_read_cpu`, so the wiki's architecture reference teaches the opposite of the shipped port. The diff changed the port and adapter and left the copies untouched, extending drift that started at the initial import."
+    }
+  ],
+  "residual_risks": [
+    "Catch-up sampling can feed sub-window measurements into the readout and the 20 s trace: app.c:501-506 re-runs metrics_sample_slow() up to MAX_CATCH_UP_SAMPLES (3, app.h:21) in a tight loop, so the calls after a hitch have an elapsed of only the microseconds the sampler itself takes. A genuine 0 us idle delta then reads 100 %, a single context switch becomes a five-figure CTX rate, and the sample lands in a trace whose axis assumes 100 ms windows. Host tests and the fake (fixed 100 ms step) cannot reproduce it; hardware has not shown it.",
+    "The aggregate in sample_cpu averages the raw idle delta (metrics.c:157) while cpu_pct_from_idle clamps its by-value copy to elapsed (metrics.c:90). In the slack band the per-core value is a clamped 0 % but the aggregate still subtracts the overshoot, so the average can read below the displayed cores by up to the slack (~0.5 points per fully idle core at 10 Hz). Bounded and cosmetic. The duplicated rounding/clamp at metrics.c:94-99 and :165-170 (demoted from a maintainability P3) is where the two paths can drift.",
+    "There is no upper bound on elapsed. A multi-second gap (LiveArea/standby, debugger pause, a long stall) is averaged as if it were one 100 ms window; if sceKernelGetProcessTimeWide and the idle clocks disagree across standby, the first post-resume sample is either a fabricated ~100 % pushed into the trace or a rejected sample that blanks the row for two windows.",
+    "PLATFORM_CPU_COUNT (4) mirrors the SDK's cpuInfo[4] with no static assertion, and platform_read_cpu() loops the port constant over the SDK array (platform_psp2.c:186). A future bump to the port count would read past the struct; a _Static_assert on sizeof(info.cpuInfo)/sizeof(info.cpuInfo[0]) in the adapter would pin it.",
+    "sceKernelGetSystemInfo is a strong SceLibKernel import, so a missing NID on 3.65 fails at module load instead of degrading to `--`. The [C] tag documents the risk, but fail-closed policy cannot cover an unresolved import.",
+    "agent-wiki/04-userland-apps.md \"Power and clocks\" was not updated with the sceKernelGetSystemInfo CPU-load route, so the wiki's app-facing API reference still omits the one userland CPU source the project now relies on.",
+    "The [C] idle-clock unit and the adapter's four refusal paths (sceKernelGetSystemInfo < 0, activeCpuMask == 0, time_us == 0, all idle clocks zero) can only be settled on the 3.65 console; the host fake emits microsecond deltas by construction, so no host test can distinguish a unit mismatch from real load.",
+    "The unused-symbol claims behind #5 were established by text search only (callsite completeness: grep-only); a macro-generated or build-time reference would not appear. No out-of-tree consumer exists in the workspace."
+  ],
+  "testing_gaps": [
+    "Rate tests cannot distinguish per-tick from per-second (demoted from a testing P2): every fake read advances exactly 100 ms (FAKE_CPU_STEP_US, fake_platform.c:38), so replacing cpu_rate()'s body with `delta * 10` still prints 145 checks, 0 failures. The app's slow tick is a frame accumulator with catch-up samples, so the real interval drifts; a configurable fake step plus a 500 ms case would pin it and would give fake_set_cpu_activity a caller.",
+    "Counter-reset guards are untested: metrics.c:147 (idle_us < prev) and metrics.c:178/181 (ctx_switches/wakeups >= prev) exist to stop an underflow, but the fake has no setter for a decreasing counter, so deleting either guard would leave the suite green.",
+    "cpu_pct_from_idle's slack path (metrics.c:82-91) is unexercised: only idle = 2 x elapsed is tested, not the accept-and-clamp case where a fully idle core's idle clock reads a few microseconds past the wall clock and must render 0 %, not `--`; the unclamped value also feeds idle_sum, which is where the aggregate mismatch comes from.",
+    "The baseline-only state after metrics_init() is not asserted: cpu_valid must be 0, every core CPU_CORE_UNKNOWN and hist_cpu empty until a second window exists.",
+    "Recovery after a failed or rejected CPU sample is untested: test_cpu_failed_read_leaves_trace_alone stops at the failure, so the two-window blank that follows a cleared baseline is unpinned and a regression that never resumes the trace would pass.",
+    "No test narrows activeCpuMask between samples (or wraps a 32-bit threadSwitchCount), so the regression path behind #2 and the mask-intersection behaviour are unverified.",
+    "All four active cores at 100 % (every idle delta zero) must yield a valid 100 average rather than `--`; test_cpu_active_mask covers only a single 100 % core.",
+    "The aggregate's +0.5 rounding is unpinned: the fixture's mean is 13.25, which truncates to the same 13, so a switch to plain truncation would still pass; a mean like 13.5 would distinguish them.",
+    "The diff removed test_failed_memory_leaves_trace_alone and replaced it with the CPU equivalent; fake_set_memory_absent() now only feeds test_alert_policy, so nothing asserts mem_valid == 0 or that the three pools render `--` after a failed memory read. This is a coverage regression in the memory subsystem, reported as a gap rather than a finding because no reviewer assigned it a severity."
+  ],
+  "triage_groups": [
+    {
+      "id": "G1",
+      "title": "Fail-closed CPU readout",
+      "kind": "decision-gate",
+      "findings": [
+        1,
+        2
+      ],
+      "context": "#1 leaves one direction of an idle-clock unit error undetected while four docs promise it is caught; #2 draws CTX/WAKE 0/S when the cumulative counters are unavailable.",
+      "preferred_resolution": "Decide #1 first - correct the docs to the one-sided guarantee or add the opposite-direction guard - then implement #2's per-rate validity flags so the caption follows the same `--` contract.",
+      "why": "Both are one honesty failure: a value the platform cannot support is drawn as a measurement. #1's decision fixes the wording and checklist that #2's tests and docs will follow."
+    },
+    {
+      "id": "G2",
+      "title": "Verification claims vs. actual coverage",
+      "kind": "apply-queue",
+      "findings": [
+        3,
+        7
+      ],
+      "context": "#3: no test or preview exercises the panel's `--` branch. #7: the [V] ledger marks the fixed 0-100 % trace host-test verified although no test observes the axis.",
+      "preferred_resolution": "Do #3 first (preview scene plus a pure formatting helper the harness links), then correct #7's rows to what is actually asserted.",
+      "why": "Both let the docs claim verification the suite cannot produce; the added coverage shrinks what #7 has to reword."
+    },
+    {
+      "id": "G3",
+      "title": "Docs and comments that lag the shipped behaviour",
+      "kind": "apply-queue",
+      "findings": [
+        4,
+        6,
+        8
+      ],
+      "context": "ARCHITECTURE.md:320 names the wrong file for the unit guard, metrics.h:98's contract comment omits CPU, and PROJECTS.md:26's Next cell is a three-action checklist.",
+      "preferred_resolution": "Mechanical edits in any order: add core/metrics.c to the [C] row's Where column, add CPU to the header comment, and reduce the Next cell to the flash-and-confirm step.",
+      "why": "Three independent documentation inaccuracies introduced by the same diff; one pass over the touched docs closes them."
+    }
+  ],
+  "counts": {
+    "primary": 8,
+    "pre_existing": 1,
+    "selected_for_validation": 8,
+    "validator_shortcut_skipped": 0,
+    "raw_findings": 17,
+    "suppressed_by_confidence": 1,
+    "demoted_to_soft_buckets": 2
+  },
+  "coverage": {
+    "reviewers": [
+      "correctness",
+      "project-standards",
+      "testing",
+      "maintainability",
+      "adversarial"
+    ],
+    "raw_findings": 17,
+    "malformed_findings": 0,
+    "malformed_returns": 0,
+    "failed_reviewers": [],
+    "bound_exceeded": [],
+    "first_evidence_backfilled": 16,
+    "first_evidence_backfilled_note": "16 findings recovered from evidence[0] on the first helper pass (initial count preserved); the reconciliation pass backfilled 9 of the surviving candidates and adds no new recoveries.",
+    "quote_check_demotions": 0,
+    "suppressed_by_confidence": {
+      "50": 1
+    },
+    "suppressed_at_anchor_50": 1,
+    "suppressed_at_anchor_25": 0,
+    "suppressed_note": "The single anchor-50 candidate (correctness: wrong-unit guard) was not discarded: it was reconciled into primary #1 as the same defect and fix path.",
+    "demoted_to_soft_buckets": 2,
+    "demotion_notes": "testing P2 'Rate tests cannot catch a per-tick instead of per-second bug' -> testing_gaps (second absence-of-coverage claim in the CPU readout subsystem; #3 kept as the umbrella). maintainability P3 'Duplicate percent rounding and clamp in metrics.c' -> residual_risks (single-reviewer maintainability advisory, no quoted violated contract).",
+    "semantic_reconciliations": 3,
+    "reconciliation_notes": "3 CTX/WAKE 0/S candidates -> #2; 4 unused-CPU-surface candidates -> #5; the suppressed anchor-50 unit-guard candidate -> #1. 17 reviewer findings became 8 primary + 1 pre-existing.",
+    "primary_findings": 8,
+    "pre_existing_findings": 1,
+    "settlement": "No plan was discovered in Stage 2b (plan.source = none), so settlement suppression was not evaluated.",
+    "validator": "Selected batch: 8 findings (all 8 primary). Shortcut skips: 0 - no adversarial-<provider> peer ran, so no finding carries the cross-model corroboration Stage 5b step 1 requires.",
+    "inspection_boundary": "The host suite (145 metrics / 1,208 editor / 33 UI checks) was reported run by the testing reviewer; the preview renderer and the PNG-level appearance of the new CPU rows were not exercised in this review, and no runtime path here has run on the console.",
+    "removable_surface": "~9 lines across 4 files from #5 (metrics.h, metrics.c, fake_platform.h, fake_platform.c)."
+  },
+  "coverage_notes": [
+    "Review depth: full (497 executable non-test changed lines; scope helper reported size_band=large and an uncounted-file floor).",
+    "Project standards ran against the root AGENTS.md instruction-file fallback; no CODING_STANDARDS.md exists in the tree.",
+    "Untracked `vitaFTPShell/` was excluded from review scope.",
+    "No plan was discovered; requirements completeness is not applicable.",
+    "Cross-model adversarial pass: not run because the host serving family is un-attestable under OpenCode/DeepSeek; the in-process adversarial reviewer covered the adversarial lens.",
+    "Fast pass emitted no preliminary P0/P1 candidates."
+  ],
+  "peer_fold_in": {
+    "selected": false,
+    "outcome": "not-run",
+    "artifact": null,
+    "coverage": "cross-model pass: not run; host serving family is un-attestable under OpenCode/DeepSeek, so the in-process adversarial reviewer covered the lens.",
+    "note": "No adversarial-<provider> peer artifact was folded; the in-process adversarial reviewer's return is already in raw-returns.json and its reviewers list carries the 'adversarial' identity without independent-verification status."
+  },
+  "source_artifacts": {
+    "raw_returns": "/tmp/compound-engineering-501/ce-code-review/20261108-105324-38da7151/raw-returns.json",
+    "mechanical_first_pass": "/tmp/compound-engineering-501/ce-code-review/20261108-105324-38da7151/mechanical-findings.json",
+    "reconciled_input": "/tmp/compound-engineering-501/ce-code-review/20261108-105324-38da7151/reconciled-input.json",
+    "mechanical_second_pass": "/tmp/compound-engineering-501/ce-code-review/20261108-105324-38da7151/mechanical-findings-pass2.json"
+  },
+  "actionable_queue": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ]
+}

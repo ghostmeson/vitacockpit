@@ -1,0 +1,76 @@
+{
+  "reviewer": "testing",
+  "findings": [
+    {
+      "title": "No test or preview renders the CPU fail-closed \"--\" path",
+      "severity": "P2",
+      "file": "vita-cockpit/src/panels/core.c",
+      "line": 61,
+      "why_it_matters": "The intent promises the panel falls back to \"--\" when the scheduler counters are missing or the idle-clock unit is wrong, but only the policy layer is asserted. If the per-core or caption fallback regressed (for example printing the zeroed percentage), every host check would still pass and no preview scene would reveal it, so the first evidence would come from the user's console run. The project already treats a fabricated number as worse than a missing one, which makes this the one display contract that should be proven before flashing.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "suggested_fix": "Add a preview scene that calls fake_set_cpu_absent() (and a second with fake_set_cpu_mask(0x5)) before metrics_sample_slow(), so the THEME_ABSENT branch renders and is inspectable, mirroring the uma0-absent default that exercises STORAGE's \"--\". For an automated gate, extract the per-core and caption formatting into a pure helper that tools/test links, and assert it emits \"--\" for CPU_CORE_UNKNOWN and for cpu_valid == 0.",
+      "confidence": 75,
+      "evidence": [
+        "vita-cockpit/src/panels/core.c:56-61 -- int valid = pct != CPU_CORE_UNKNOWN; if (valid) snprintf(value, sizeof(value), \"%d%%\", pct); else snprintf(value, sizeof(value), \"%s\", THEME_ABSENT);",
+        "vita-cockpit/src/panels/core.c:88-96 -- if (g_metrics.cpu_valid) { \"CPU LOAD AVG %d%%\" / \"CTX %d/S  WAKE %d/S\" } else { \"CPU LOAD AVG %s\" / \"CTX %s  WAKE %s\", THEME_ABSENT };",
+        "vita-cockpit/tools/test/run.sh:20-25 -- the host test links only test_metrics.c, fake_platform.c, history.c, metrics.c and plugins.c; no panels/ source is compiled, so draw_cpu_row and draw_caption cannot be covered by any host check.",
+        "vita-cockpit/tools/preview/preview.c:49-67 -- seed_trace sets four valid per-core loads, and no scene calls fake_set_cpu_absent(); the only call site is test_metrics.c:142, which asserts g_metrics fields, not rendering."
+      ],
+      "pre_existing": false
+    },
+    {
+      "title": "Rate tests cannot catch a per-tick instead of per-second bug",
+      "severity": "P2",
+      "file": "vita-cockpit/tools/test/test_metrics.c",
+      "line": 87,
+      "why_it_matters": "The fake advances exactly 100 ms per read, so 840 ctx/s and 84 switches per tick x 10 are the same number to the only rate assertion. A regression that assumes the 10 Hz cadence would keep all 145 checks green, yet the app's slow tick is a frame accumulator with catch-up samples (app.c:498-506), so the real interval drifts and the displayed CTX/WAKE values would be wrong on hardware. That is exactly the fabricated readout the project forbids, and the existing fake_set_cpu_activity helper shows a rate test was intended but never written.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "suggested_fix": "Give the fake a configurable sampling step (for example fake_set_cpu_step_us) and add a case where two reads are 500 ms apart that still expects 840 ctx/s and 230 wake/s, keeping the 100 ms case. Wire fake_set_cpu_activity into that test, or delete its declaration at fake_platform.h:25 and definition at fake_platform.c:137.",
+      "confidence": 75,
+      "evidence": [
+        "vita-cockpit/tools/test/test_metrics.c:87 -- CHECK(g_metrics.cpu_ctx_per_s == 840);",
+        "vita-cockpit/tools/fake/fake_platform.c:38 -- #define FAKE_CPU_STEP_US 100000ull and fake_platform.c:259 -- s_cpu_time_us += FAKE_CPU_STEP_US; every read advances exactly 100 ms, so delta x 1e6 / elapsed and delta x 10 are indistinguishable.",
+        "Mutation in a scratch copy of HEAD 1910e0f: replacing cpu_rate's body with \"uint64_t rate = delta * 10;\" still prints \"145 checks, 0 failure(s)\".",
+        "vita-cockpit/tools/fake/fake_platform.h:25 -- void fake_set_cpu_activity(int ctx_per_s, int wake_per_s); is declared and defined (fake_platform.c:137) but no test calls it, so the rates are never varied either."
+      ],
+      "pre_existing": false
+    },
+    {
+      "title": "Docs claim [V] coverage of a trace axis no test asserts",
+      "severity": "P3",
+      "file": "agent-wiki/13-fact-check.md",
+      "line": 88,
+      "why_it_matters": "The verification table marks the fixed 0-100 % trace as host-test verified, but no host test observes the axis: the only trace assertions are the ring length and the newest value, and the 0/100 literals live in a panel file the test harness never links. A future autoscale change would leave every check green while the docs still read [V], so the project's verified tag would be claiming a guarantee nothing enforces.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": false,
+      "suggested_fix": "Either record the sparkline's lo/hi arguments in the preview shim (tools/preview/vita2d_soft.c) and add a scene assertion for 0/100, or reword the three claims to what is actually demonstrated: \"host tests cover the trace data; the preview renders it on the fixed 0-100 % axis\".",
+      "confidence": 75,
+      "evidence": [
+        "agent-wiki/13-fact-check.md:88 -- | CPU readout | [V] host tests cover per-core percentages, the active mask, the active-core average, context-switch/wakeup rates, a failed read leaving the trace alone, and the fixed 0-100 % trace; ...",
+        "vita-cockpit/tools/test/test_metrics.c:89-90 -- CHECK(g_metrics.hist_cpu.len == 1); CHECK(history_at(&g_metrics.hist_cpu, 0) == 13.0f); these are the only trace assertions and neither touches the axis.",
+        "vita-cockpit/src/panels/core.c:115-116 -- theme_sparkline(&g_metrics.hist_cpu, x, r.y + CORE_TRACE_Y, w, CORE_TRACE_H, C_YELLOW, 0.0f, 100.0f); the literals are in a file tools/test/run.sh does not link.",
+        "vita-cockpit/docs/DECISIONS.md:2000 and PROJECTS.md:44 repeat the same [V] claim for the fixed-scale trace."
+      ],
+      "pre_existing": false
+    }
+  ],
+  "residual_risks": [
+    "The real adapter's four refusal paths (sceKernelGetSystemInfo < 0, activeCpuMask == 0, time_us == 0, all idle clocks zero) and the microsecond idleClock unit are [C]; the host fake replaces the adapter, so only the b153 console run can confirm them.",
+    "The fail-closed check rejects only idle > elapsed. An idleClock in a unit smaller than microseconds (for example 10 us ticks) would be accepted and render a permanently high load; the suite has no case in that direction.",
+    "Metrics.cpu_active_mask is assigned at metrics.c:174 but no consumer reads it, so a wrong value has no observable effect and no test asserts it.",
+    "I ran the host suite (145 metrics / 1,208 editor / 33 UI, 0 failures) but not the preview renderer; the PNG-level appearance of the new CPU rows is unverified in this review."
+  ],
+  "testing_gaps": [
+    "Counter-reset guards are untested: metrics.c:147 (idle_us < prev) and metrics.c:178/181 (ctx_switches/wakeups >= prev) exist to stop a 64-bit underflow, but the fake has no setter for a decreasing counter, so deleting either guard would leave the suite green.",
+    "cpu_pct_from_idle's slack path (metrics.c:82-91) is unexercised: only idle = 2 x elapsed is tested, not the accept-and-clamp case where a fully idle core's idle clock reads a few microseconds past the wall clock and must render 0 %, not \"--\".",
+    "The baseline-only state after metrics_init() is not asserted directly: cpu_valid must be 0, every core CPU_CORE_UNKNOWN and hist_cpu empty until a second window exists.",
+    "Recovery after a failed or rejected sample is untested: the next good read re-baselines (s_have_prev_cpu = 0) and the one after must produce values again.",
+    "All four active cores at 100 % (every idle delta zero) must yield a valid 100 average rather than \"--\"; test_cpu_active_mask only covers a single 100 % core.",
+    "The aggregate's +0.5 rounding is unpinned: the fixture's mean is 13.25, which truncates to the same 13, so a switch to plain truncation would still pass; a mean like 13.5 would distinguish the two."
+  ]
+}

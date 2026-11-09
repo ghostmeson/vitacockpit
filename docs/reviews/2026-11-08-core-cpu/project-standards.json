@@ -1,0 +1,130 @@
+{
+  "reviewer": "project-standards",
+  "findings": [
+    {
+      "title": "Idle-clock unit guard is one-sided but documented as fail-closed",
+      "severity": "P1",
+      "file": "vita-cockpit/src/core/metrics.c",
+      "line": 82,
+      "why_it_matters": "If `cpuInfo[].idleClock` is not microseconds on this console, CORE does not fall back to `--`. A counter that advances more slowly than wall time (milliseconds, seconds) passes the `idle > elapsed` check, and the ratio then renders a permanent ~100 %, which is the exact fabricated number D6/D103 forbid and the exact symptom PROJECT.md's hardware checklist says must never appear. The workspace rule is that a value the platform cannot supply renders `--`, never a guess, and the stated intent for this change was to fail closed on a wrong unit; only one direction of unit error is detected. The four comments and docs that promise a full guarantee must be corrected to the one-sided guarantee and the slower-unit symptom added to the hardware checklist, or the guard must gain a second direction.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "suggested_fix": "Correct the claim in vita-cockpit/src/core/platform.h:82-85, vita-cockpit/src/platform/platform_psp2.c:163-166, vita-cockpit/docs/DECISIONS.md:1997, vita-cockpit/docs/ARCHITECTURE.md:320 and PROJECTS.md:26 to say the guard catches only a counter that advances faster than wall time, and add to PROJECT.md's hardware checklist: \"a static ~100 % at idle means idleClock is coarser than microseconds; record it and treat CPU as unavailable.\"",
+      "confidence": 75,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.c:77-82 -- \"The idle clock cannot have advanced further than wall time. If it did, the unit is not microseconds; refusing the sample is the only honest answer ... if (idle > elapsed) {\"",
+        "vita-cockpit/src/core/platform.h:83-85 -- \"The sampling policy refuses a sample where an idle delta exceeds the elapsed time, so a unit mismatch renders \\\"--\\\" instead of a fabricated percentage.\"",
+        "vita-cockpit/src/platform/platform_psp2.c:165-166 -- \"core/metrics.c rejects a sample whose idle delta exceeds the elapsed time, so a wrong unit becomes \\\"--\\\", never a percentage.\"",
+        "vita-cockpit/docs/DECISIONS.md:1997 (D103) -- \"If an idle delta exceeds the elapsed time, the sample is refused and the panel renders `--`, so a unit mismatch cannot become a fabricated percentage.\"",
+        "PROJECTS.md:26 -- \"`[C]` `sceKernelGetSystemInfo` and the microsecond `idleClock` unit are unconfirmed on this console; a unit mismatch renders `--`.\"",
+        "vita-cockpit/src/core/metrics.c:93 -- double busy = 100.0 - ((double)idle * 100.0 / (double)elapsed); a 99 ms idle delta over a 100000 us window evaluates to 99.9 and rounds to 100, i.e. a reported 100 % load rather than an absent value"
+      ],
+      "pre_existing": false
+    },
+    {
+      "title": "CTX/WAKE print a fabricated 0/S when the cumulative delta regresses",
+      "severity": "P2",
+      "file": "vita-cockpit/src/core/metrics.c",
+      "line": 178,
+      "why_it_matters": "The adapter sums `threadSwitchCount`/`comesOutOfIdleCount` over only the cores active at read time, so when `activeCpuMask` narrows between samples (the same event the percentage path already anticipates at line 140) the accumulated total falls and the `>=` guard leaves the two rates at the zero the sample pre-set. `cpu_valid` stays 1 because the remaining cores produced usable idle deltas, so CORE draws `CTX 0/S  WAKE 0/S` — a measurement it does not have — instead of `--`. The workspace rule is explicit that an unavailable value renders `--`, not a zero, and the POWER panel already carries per-field validity for exactly this reason; the two rate fields need the same per-field treatment.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "suggested_fix": "Add `int cpu_ctx_valid; int cpu_wake_valid;` to Metrics, clear them with the other CPU fields in sample_cpu(), set each only inside its `>=` branch, and have draw_caption() render `--` for whichever field is invalid (matching the per-field POWER pattern). Add a regression test that narrows the fake mask between samples and asserts the rate reads unavailable.",
+      "confidence": 75,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.c:178-180 -- if (in.ctx_switches >= s_prev_cpu.ctx_switches) g_metrics.cpu_ctx_per_s = cpu_rate(in.ctx_switches - s_prev_cpu.ctx_switches, elapsed);",
+        "vita-cockpit/src/core/metrics.c:122-123 -- g_metrics.cpu_ctx_per_s = 0; g_metrics.cpu_wake_per_s = 0;",
+        "vita-cockpit/src/core/platform.h:87 -- \"`ctx_switches` and `wakeups` are cumulative counts across the active cores.\"",
+        "vita-cockpit/src/platform/platform_psp2.c:189-193 -- if ((info.activeCpuMask & (1u << i)) == 0) continue; out->ctx_switches += info.cpuInfo[i].threadSwitchCount; out->wakeups += info.cpuInfo[i].comesOutOfIdleCount;",
+        "vita-cockpit/src/panels/core.c:88-92 -- if (g_metrics.cpu_valid) { ... snprintf(right, sizeof(right), \"CTX %d/S  WAKE %d/S\", g_metrics.cpu_ctx_per_s, g_metrics.cpu_wake_per_s);"
+      ],
+      "pre_existing": false
+    },
+    {
+      "title": "CPU test hook is never called; mask field is never read",
+      "severity": "P3",
+      "file": "vita-cockpit/tools/fake/fake_platform.c",
+      "line": 137,
+      "why_it_matters": "`fake_set_cpu_activity` is declared and defined but no test or preview calls it, so the fake carries a knob that documents an ability nothing exercises; the rate assertions in `test_cpu_usage` pass only because `cpu_reset` hardcodes 840/230. `Metrics.cpu_active_mask` is likewise written twice and read nowhere. The workspace rule forbids keeping code nothing invokes, and unused state invites a later panel to trust a value no path maintains. Deleting the setter and the field, or using the setter in a test that changes the rate between samples, restores the rule.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": false,
+      "suggested_fix": "Delete `fake_set_cpu_activity` from tools/fake/fake_platform.h and fake_platform.c (the defaults already drive the rate checks), and either delete `Metrics.cpu_active_mask` or add a test that asserts the published mask.",
+      "confidence": 100,
+      "evidence": [
+        "vita-cockpit/tools/fake/fake_platform.c:137 -- void fake_set_cpu_activity(int ctx_per_s, int wake_per_s)",
+        "vita-cockpit/tools/fake/fake_platform.h:25 -- void fake_set_cpu_activity(int ctx_per_s, int wake_per_s);",
+        "grep for fake_set_cpu_activity across vita-cockpit/ returns only the declaration and the definition; tools/test/test_metrics.c and tools/preview/preview.c do not call it",
+        "vita-cockpit/src/core/metrics.h:56 -- unsigned cpu_active_mask; written at metrics.c:121 and metrics.c:174, read at no site in the workspace"
+      ],
+      "pre_existing": false
+    },
+    {
+      "title": "Docs place the idle-unit rejection in the adapter, not the policy",
+      "severity": "P3",
+      "file": "vita-cockpit/docs/ARCHITECTURE.md",
+      "line": 320,
+      "why_it_matters": "The `[C]` claim table exists so a hardware correction lands in the file its Where column names, and ARCHITECTURE.md:333 makes that promise explicit. This row says \"the adapter rejects a delta larger than elapsed time\" and points at `platform_psp2.c`, but `platform_read_cpu` contains no such check; the rejection is `cpu_pct_from_idle()` in `core/metrics.c`. A maintainer correcting the idle-clock unit after a console session would edit the adapter and leave the actual guard untouched, so the routing the document promises fails exactly when it is needed.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": false,
+      "suggested_fix": "Reword the Evidence cell to name both files, e.g. \"the header does not state the unit; `core/metrics.c` (cpu_pct_from_idle) rejects a delta larger than elapsed time\", and list `core/metrics.c` in the Where column alongside `platform_psp2.c`.",
+      "confidence": 100,
+      "evidence": [
+        "vita-cockpit/docs/ARCHITECTURE.md:320 -- | `cpuInfo[].idleClock` advances in microseconds | `[C]` the header does not state the unit; the adapter rejects a delta larger than elapsed time | `platform_psp2.c` |",
+        "vita-cockpit/docs/ARCHITECTURE.md:333 -- \"If a `[C]` claim is corrected on hardware, correct it in the file its Where column names.\"",
+        "vita-cockpit/src/core/metrics.c:82-88 -- if (idle > elapsed) { ... if (idle > elapsed + slack) return CPU_CORE_UNKNOWN; the only delta-versus-elapsed rejection in the tree",
+        "vita-cockpit/src/platform/platform_psp2.c:165-166 -- the adapter's own comment already credits core/metrics.c with the rejection"
+      ],
+      "pre_existing": false
+    },
+    {
+      "title": "PROJECTS.md Next cell lists three actions, not one",
+      "severity": "P3",
+      "file": "PROJECTS.md",
+      "line": 26,
+      "why_it_matters": "The board rule is that Next holds the single next action, but this row packs flash, CPU verification, and the remaining checklist into one semicolon chain. A board whose Next cells are checklists stops answering the question it exists for — what to do next — without re-reading the whole cell, and the superseded b150 row carried the same shape, so the pattern is spreading rather than being corrected. Collapsing the cell to the flash-and-confirm step and moving the rest of the checklist to Notes or the project doc restores the rule.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": false,
+      "suggested_fix": "Reduce the Next cell to the first action (\"Flash `cockpit-v01.00-b153.vpk` and confirm CPU load moves and is not a static 100 %/`--`\") and move \"run the remaining dashboard/manager checklist\" into Notes with a pointer to vita-cockpit/docs/PROJECT.md §5.",
+      "confidence": 75,
+      "evidence": [
+        "PROJECTS.md:26 -- | ... | Flash `cockpit-v01.00-b153.vpk`; confirm CPU load moves and is not a static 100 %/`--`; then run the remaining dashboard/manager checklist | ... |",
+        "AGENTS.md project tracker table -- | Next | the single next action, not a list |"
+      ],
+      "pre_existing": false
+    },
+    {
+      "title": "agent-wiki example copies still show the clock-era port",
+      "severity": "P3",
+      "file": "agent-wiki/examples/cockpit/platform.h",
+      "line": 54,
+      "why_it_matters": "The workspace rule says a project change updates `12-projects.md` **and** the source copies under `agent-wiki/examples/`, and `12-projects.md:16` still advertises `examples/cockpit/` as the reference for \"the port, the adapter\". Those copies predate D99: they declare `PlatformClocks`, three storage mounts, and neither `PlatformCpu` nor `platform_read_cpu`, so the wiki's architecture reference teaches the opposite of the shipped port. The diff changed the port and adapter and left the copies untouched, extending drift that started at the initial import.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": false,
+      "suggested_fix": "Regenerate `agent-wiki/examples/cockpit/platform.h` and `platform_psp2.c` from `vita-cockpit/src/core/platform.h` and `vita-cockpit/src/platform/platform_psp2.c` (the copies are advertised as verbatim), so the example carries `PlatformCpu`/`platform_read_cpu` and drops `PlatformClocks`.",
+      "confidence": 75,
+      "evidence": [
+        "agent-wiki/examples/cockpit/platform.h:54 -- } PlatformClocks;",
+        "agent-wiki/examples/cockpit/platform.h:25 -- #define PLATFORM_STORAGE_COUNT 3",
+        "grep -c 'PlatformCpu|platform_read_cpu' agent-wiki/examples/cockpit/platform.h agent-wiki/examples/cockpit/platform_psp2.c -> 0 and 0, while vita-cockpit/src/core/platform.h:77 declares PLATFORM_CPU_COUNT and :90-97 PlatformCpu",
+        "agent-wiki/12-projects.md:16 -- \"Source copies are in [`examples/`](examples/), including `examples/cockpit/` for the port, the adapter, the panel contract, and the layout table.\"",
+        "provenance: 5397df1 Import the PS Vita homebrew workspace - the only commit touching agent-wiki/examples/cockpit/"
+      ],
+      "pre_existing": true
+    }
+  ],
+  "residual_risks": [
+    "agent-wiki/04-userland-apps.md \"Power and clocks\" was not updated with the `sceKernelGetSystemInfo` CPU-load route this diff introduces; the maintenance table maps app-API knowledge to that file, so the wiki's app-facing reference still omits the one userland CPU source the project now relies on.",
+    "The `[C]` idle-clock unit can only be settled on the 3.65 console: the host fake emits microsecond deltas by construction, so no host test can distinguish a unit mismatch from real load, and b153's correctness on hardware rests on a reading the suite cannot produce.",
+    "The unused-symbol claims (fake_set_cpu_activity, cpu_active_mask) were verified by text search only; no symbol-aware index is available, so an out-of-tree or generated consumer cannot be ruled out (none exists in the workspace)."
+  ],
+  "testing_gaps": [
+    "No test narrows `activeCpuMask` between samples (or wraps a 32-bit `threadSwitchCount`), so the path where the accumulated ctx/wake total regresses and the panel must show `--` is untested.",
+    "No test covers the slower-than-microsecond idle-clock direction (e.g. millisecond deltas), which is the direction `test_cpu_bad_unit_fails_closed` deliberately does not exercise."
+  ]
+}

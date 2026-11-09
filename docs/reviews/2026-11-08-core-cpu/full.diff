@@ -1,0 +1,2281 @@
+diff --git a/PROJECTS.md b/PROJECTS.md
+index fd2805f..fe6655c 100644
+--- a/PROJECTS.md
++++ b/PROJECTS.md
+@@ -16,36 +16,39 @@ after every job** — a job is not finished until this file reflects it.
+ `built` → `verified` requires hardware evidence. Never promote without it.
+ 
+ ---
+ 
+ ## Board
+ 
+ | Project | Status | Last job | Next | Notes |
+ |---|---|---|---|---|
+ | `vita-cap-test` | `built` | 2026-11-08 — switched to the safe authid, bounded DNS/connect/send/recv, guarded the SceNet unload, added project docs and a packaging test; b6 | Run the safe VPK on hardware; confirm I/O, PCM audio, WiFi/DNS/HTTP and the timeout behavior | Safe `...0002`; ~2.6 MB VPK. `SceNet` resolver timeout 5 s, non-blocking connect 5 s, socket send/recv 5 s. No hardware run since the change. |
+ | `vita-kernel-demo` | `blocked` | 2026-11-08 — documented both blockers, synchronized the hook counter/path, corrected the NID docs, added `SceCpuForDriver`, project docs and a packaging test; b8 | Decide the design: retire, file/shared-memory exchange, or boot plugin after clearing safety rule 2 | **Blocked, do not flash.** The app links the strong stub of the plugin it loads at runtime, so the loader resolves `KernelDemo` before `main()` and the app cannot start. The on-demand kernel load is also shell-gated. Not in `*KERNEL`. |
+-| `vita-cockpit` | `built` | 2026-11-08 — codebase health review: preserved the last `.old` copy, repaired oversized/no-live/comment-only undo paths, made the unrecovered state offer UNDO instead of dead SAVE/CONFIRM, kept selection by path, revalidated dock focus, fixed the zero-buffer pad read and fabricated frame samples, added per-field power validity, made previews section-aware, relabelled HOME to `PLUGINS LISTED`, and made build identity variant/asset-aware; b150 | Flash `cockpit-v01.00-b150.vpk` and run the 14-step dashboard/manager checklist plus the new recovery regressions | `UNSAFE` default. b150 is 130,853 bytes, SHA-256 `5143618f9affa68c275c1406819b32377c4662c3fccd143d0a9228a09f53555c`; the VPK contains only `eboot.bin` and `sce_sys/` (no `.suprx`, `.skprx`, RCO, or manifest). 1,371 host checks (130 metrics, 1,208 editor, 33 UI) and 38 previews pass (busiest 5,429/8,000). Console evidence 2026-11-05: `*main` probe wrote `probe`/`net=0`; the b141 plugin never reached `module_start`; the loader caused `C1-14738-3`; recovered from `ur0:tai_bkp`. Not hardware-verified since b13/b124; stays `built`. |
++| `vita-cockpit` | `built` | 2026-11-08 — replaced the memory-only CORE panel with userland per-core CPU load, active-core average, context-switch/wakeup rates, and a fixed 0–100 % CPU trace from `sceKernelGetSystemInfo`; kept the memory pools and the FRAME strip as the GPU view; b153 | Flash `cockpit-v01.00-b153.vpk`; confirm CPU load moves and is not a static 100 %/`--`; then run the remaining dashboard/manager checklist | `UNSAFE` default. b153 is 132,568 bytes, SHA-256 `a691859562423d216a480095ad75101e96164074c99eddc29156f83f8fed484f`; the VPK contains only `eboot.bin` and `sce_sys/` (no `.suprx`, `.skprx`, RCO, or manifest). 1,386 host checks (145 metrics, 1,208 editor, 33 UI) and 38 previews pass (busiest 5,429/8,000). The user reports b150 works on the 3.65 console (2026-11-08); b153 has not run yet. `[C]` `sceKernelGetSystemInfo` and the microsecond `idleClock` unit are unconfirmed on this console; a unit mismatch renders `--`. No kernel plugin, no `*KERNEL` entry. |
++| `vitaFTPShell` | `planning` | 2026-11-08 — wrote `STRATEGY.md`: console-as-peer FTP client + local file manager, server mode as a compatibility surface, GPLv3 via VitaShell | Draft the requirements and v1 scope before any code | Strategy only; no source tree or VPK yet. GPLv3 subproject inside the MIT workspace; do not copy its code back into the MIT projects. Boundaries: no SFTP/FTPS, no background daemon, no PC-first UI, no VitaShell parity. |
+ 
+ ---
+ 
+ ## Log
+ 
+ Newest first. One line per job: date, project, what changed. Keep the board
+ above as the summary; this is the history.
+ 
+ Build numbers before 2026-11-02 predate the counter reset that pruned the stale
+ VPKs; an old `b7`, or the `b10` in the 2026-11-02 storage-error entry, predates
+ the counter reset. The date and the entry around it distinguish it from the
+ current `b8`+ builds.
+ 
+ | Date | Project | Change |
+ |---|---|---|
++| 2026-11-08 | `vitaFTPShell` | Strategy interview and `STRATEGY.md`. The product is a console-first FTP client plus local file manager: the Vita is the peer on both sides of the transfer, not a remote endpoint. Primary user is the anonymous-first collector; secondary is the Vita-as-a-drive user. Four tracks: FTP engine (client + passive server), two-pane workspace and saved sites, safe local manager (VitaShell as the GPLv3 foundation), and the HUD shell. Boundaries: no SFTP/FTPS, no background daemon, no PC-first UI, no VitaShell parity. No code yet. |
++| 2026-11-08 | `vita-cockpit` | b153: CORE gains a real userland CPU readout. `sceKernelGetSystemInfo()` supplies per-core idle clocks, wakeup counts, and thread-switch counts; `core/metrics.c` turns the deltas into four per-core percentages, an active-core average, and context-switch/wakeup rates, and pushes the average into a fixed 0–100 % 20 s trace. The memory pools stay as the second row. GPU work is represented by CDRAM/PHY and the pinned FRAME strip; applied clocks and GPU load remain unavailable without a kernel source, so no `REQ` or fabricated GPU row was added. New tests cover per-core values, the active mask, the aggregate, the rates, a failed read leaving the trace alone, and the fixed-scale trace. 1,386 checks (145 metrics, 1,208 editor, 33 UI), 38 previews, default and safe builds. b153 is 132,568 bytes, SHA-256 `a691859562423d216a480095ad75101e96164074c99eddc29156f83f8fed484f`. `[C]` the SDK call and idle-clock unit are unconfirmed on the console. The user reports b150 works; b153 stays `built` until it runs. |
+ | 2026-11-08 | `vita-cockpit` | b150: full codebase health review. Config recovery now preserves an orphan `.old`, classifies only ENOENT as absent, restores ORIGINAL/SESSION with no live config, skips the stale check for an oversized UNDO, and keeps the previous `.undo` across a failed snapshot. An unrecovered write is a repair state with UNDO instead of dead SAVE/CONFIRM. Restore keeps selection by path; dock focus revalidates; a zero-buffer pad read stays centred; `hist_frame` ignores zero samples; POWER has per-field validity; missing files no longer count as ACTIVE/LOADED; previews see section moves and warn on KERNEL removal. HOME says `PLUGINS LISTED`. Build identity now includes `--safe` and `sce_sys`, the stamp lives beside `BUILD_NUMBER`, the prune keeps one VPK, and `send.sh` names the variant. New tests cover orphan `.old`, oversized/comment-only/no-live undo, section moves, unrecovered dock, zero-frame history, power validity, list-dir failure, fake case-insensitivity and the safe authid. 1,371 checks (130 metrics, 1,208 editor, 33 UI), 38 previews, default and safe builds. b150 is 130,853 bytes, SHA-256 `5143618f9affa68c275c1406819b32377c4662c3fccd143d0a9228a09f53555c`. Still hardware-unverified; stays `built`. |
+ | 2026-11-05 | `vita-cockpit` | b143: removed the entire system-plugin surface after the console evidence. The `*main` probe proved SceNet is not loaded in SceShell (`net=0`); the b141 shell plugin's hard SceNet/SceNetCtl imports kept `module_start` from running and took PSVshellPlus down; a diagnostic loader that loaded SceNet then `cockpit_system.suprx` from `*main` caused `C1-14738-3`. The console was recovered from `ur0:tai_bkp`. Deleted `system-plugin/` (shell, FTP, RCO, manifest, PAF toolchain, `libftpvita` patch, clock bridge), `core/system_plugin`, `core/path_guard`, `ui/plugin_block`, `ui/modal_flow`, payload/probe adapter calls, the self row and private editor batches, and the install/remove/force UI. CORE is memory-only. The VPK is 129,118 bytes, SHA-256 `641b3b2bbcef1f73000565a3f77bddb836941fd65af8cc3396c15de5ffac3293`, and contains only `eboot.bin` + `sce_sys/`; 1,293 checks, 38 previews, default/safe builds. D99 supersedes D85 and the system-plugin scope of D86-D98. Still hardware-unverified; stays `built`. |
+ | 2026-11-05 | `vita-cockpit` | b141: Batch A of the review follow-up. The self-plugin block now right-aligns `CLOCKS PSVSHELLPLUS`/`CLOCKS --`; the install modal states the clock source and REMOVE-before-uninstall in 468 characters; the stop fallback requires two consecutive refused 1337 probes; the impose root is re-resolved every panel tick; and `paf_libc` uses local string/memory loops, leaving only PAF heap and `vsnprintf` imports (70 total). 2,142 checks, 47 previews, default/safe builds, b141 is 192,707 bytes, SHA-256 `fee86ca9da7b9f634a54a817e38338fbdb1607cef9a6d8edbb85e36ab5f4b4fc`. Still hardware-unverified; stays `built`. |
+ | 2026-11-05 | `vita-cockpit` | b140: applied the ce code review. Closed the FTP `..` boot-config bypass and denied protected-directory RMD/rename; added `%u` to mini_sscanf so PORT works; force disable/remove now set `plan.unrecovered` and open DO NOT REBOOT; the panel update tick is registered before widget checks and clears the template latch on menu close; ping retries keep BROKEN actions; the stop gate resends once mid-budget; cancelling REMOVE repaints the block; `path_guard` is narrowed to the ur0 leaf and the fake executes it; `ensure_dir` rejects a file; `%u`/force/stop/write-once tests added; docs and counts corrected. 2,142 checks, b140 was 190,904 bytes, SHA-256 `2d8f1b7412d3aa23a47745f68839431b5121e0a3353ad56d1b806f30dba08404`. Still hardware-unverified; stays `built`. |
+ | 2026-11-04 | `vita-cockpit` | b139: fixed the b124 console failures and the re-review defects; added the path_guard system-directory whitelist. 2,118 checks, b139 was 190,189 bytes, SHA-256 `eaf56ad4bf7d49a1c8c874963567b4221a807d92e546cb30e76a56f03c84cc6b`. Still hardware-unverified; stays `built`. |
+ | 2026-11-04 | `vita-cockpit` | U8: finished the docs and handoff for b124. Added the shell include boundary, the self-plugin/modal design and decision, the first-launch/install/remove/force and FTP hardware checklist, and refreshed the stale clock-path troubleshooting to the bridge. 2,077 checks, 47 previews, default/safe builds, one b124 VPK with no safe payload. No hardware evidence; stays `built`. |
+ | 2026-11-04 | `vita-cockpit` | U7: added the self-plugin block and its host-tested policy (`ui/plugin_block`, `ui/modal_flow`, `UI_FOCUS_BLOCK`, block/modal routing), the first-launch install/conflict prompt, launch-time update copy with `UPDATE FAILED/RETRY`, install/update/repair/remove/force actions, the battery-gated reboot, the two-attempt stop/ack/probe gate with a confirmed force path, the standby `POWER OFF NOW` escape, the self-only dock reboot suppression, and the restore/undo self-removal gate. The ledger and HOME counts now exclude the hidden self row. 261 new UI checks (2,077 total), 47 preview scenes (busiest 6,109/8,000), default and safe builds pass. b124 is 184,256 bytes, SHA-256 `bf7e4881cc63507eb593abd3ad305aaff0212ed206633202582f8f8b7c19fec9`. No hardware evidence; stays `built`. |
+ | 2026-11-04 | `vita-cockpit` | U4: built the PAF-enabled shell environment outside the repo, produced `cockpit_system.suprx` (7,063 bytes) and `cockpit_plugin.rco` (1,168 bytes), generated the FNV manifest (version `4a9607ce4132`, build 99), and packed all three under `system-plugin/` in the default VPK. The safe build succeeds without PAF and omits the payload. Import audit: 24 imports, no unresolved required or weak stub. b99 was 160,526 bytes, SHA-256 `fa16cc2c08f33a4fae48c3d11532465c52e1cc367e73acbb3c568aa7fa5584c6`. No hardware evidence. |
+ | 2026-11-04 | `vita-cockpit` | U6 review: fixed a `setup-paf.sh` path that silently skipped the `libftpvita` patch, a STOP deadlock (control mutex re-entered through the worker publisher), a stop that cleared `server_up` before `ftpvita_fini` and left 1337 bound, `control.txt` replaying a stop every poll, ON/IP published while `ftpvita_fini` blocked, the device table wiped by every init, the client-list join deadlock, undetected dead accept loops, and two status/panel writers. Added a clean-checkout patch-cache hash, an 8-client cap, distinct init errors, and a stop-before-ack wait. 1,812 checks; b113 is 177,080 bytes, SHA-256 `e0b285d352eac40b4b853ce3d77764f588c4446717d4ea7a964346a65fa32f8c`. Still hardware-unverified. |
+ | 2026-11-04 | `vita-cockpit` | U6: added the host-tested FTP state machine, the netctl/worker thread, and the patched `libftpvita` (synchronous socket/bind/listen, distinct init errors, 8-client cap, resolved-path `ur0:tai/boot_config.txt` denial, teardown that joins outside the client mutex). The worker owns intent/link/listener/IP/error; the control thread consumes `control.txt`, waits for the listener to close before acking a stop, and remains the sole `status.txt` writer. Shell is 23,628 bytes; import audit 85 imports. b113 is 177,080 bytes, SHA-256 `e0b285d352eac40b4b853ce3d77764f588c4446717d4ea7a964346a65fa32f8c`; 1,812 checks. FTP/panel behavior is hardware-unverified; U7 still installs the payload and owns the UI. |
+diff --git a/README.md b/README.md
+index 632e9f1..f29a9d9 100644
+--- a/README.md
++++ b/README.md
+@@ -11,21 +11,21 @@ layout and type are the shipped ones.*
+ 
+ > **Firmware note.** The console this was developed on reports **3.74** because
+ > its system version string is spoofed. The machine is genuinely on 3.65 Enso.
+ > NIDs, offsets and API availability follow 3.65; only the displayed string is
+ > 3.74.
+ 
+ ## Projects
+ 
+ | Project | Status | What it is |
+ |---|---|---|
+-| [`vita-cockpit`](vita-cockpit/) | `built` | A two-tab system dashboard in Cyberpunk 2077 HUD style: memory, storage, power, identity, frame health, and a plugin manager that can enable or disable taiHEN plugins. |
++| [`vita-cockpit`](vita-cockpit/) | `built` | A two-tab system dashboard in Cyberpunk 2077 HUD style: CPU load, memory, storage, power, identity, frame health, and a plugin manager that can enable or disable taiHEN plugins. |
+ | [`vita-cap-test`](vita-cap-test/) | `built` | A capability test for file I/O, PCM audio, WiFi/DNS/HTTP, and the bundled libraries. |
+ | [`vita-kernel-demo`](vita-kernel-demo/) | `blocked` | A userland app that loads a real taiHEN `.skprx` on demand. Blocked: the app links the plugin it loads, so it cannot start; the on-demand load is also shell-gated. See its `docs/PROJECT.md`. |
+ 
+ `verified` means it has run on the console. `built` means it compiles and
+ packages but has not been run on hardware yet. The live board, with the exact
+ next action for each project, is [`PROJECTS.md`](PROJECTS.md).
+ 
+ ## Quick start
+ 
+ ### Prerequisites
+@@ -48,23 +48,23 @@ export PATH="$VITASDK/bin:$PATH"
+ 
+ ```sh
+ cd vita-cockpit     && ./build.sh   # dashboard
+ cd vita-cap-test    && ./build.sh   # capability test
+ cd vita-kernel-demo && ./build.sh   # app + kernel plugin
+ ```
+ 
+ Each project emits one uniquely named artifact in its `build/` directory:
+ 
+ ```text
+-build/cockpit-v01.00-b150.vpk
+-build/cap-test-v01.00-b4.vpk
+-build/kernel-demo-v01.00-b5.vpk
++build/cockpit-v01.00-b153.vpk
++build/cap-test-v01.00-b6.vpk
++build/kernel-demo-v01.00-b8.vpk
+ ```
+ 
+ The build number identifies a **distinct** build, not a compiler invocation.
+ `build.sh` hashes the sources and reuses the previous number when nothing
+ changed, so rebuilding for a warning check does not inflate the counter. The
+ number lives in the project's `BUILD_NUMBER` file, never in `build/`, and the
+ directory is pruned to the single newest VPK. COCKPIT can also build the
+ restricted variant with `./build.sh --safe`.
+ 
+ ### Install
+@@ -79,41 +79,43 @@ cd vita-cockpit && ./send.sh 192.168.1.42
+ The URL form is `ftp://<ip>:1337/ux0:/data/` — colon followed by slash. Then
+ install the VPK from `ux0:data` in VitaShell and launch the bubble.
+ 
+ ## COCKPIT
+ 
+ The dashboard reads the machine it is running on and draws it as one live
+ instrument panel:
+ 
+ ```text
+ CORE 552×210                 │ POWER 360×210
+-USER 179 CDRAM 41 PHY 64     │              87%
+-FREE USER MEM MB 171-193   │          CHARGING
+-      ╱‾╲__╱‾╲__             │ TEMP 31  VOLT 3820
++C0 18% C1 22% C2 9% C3 4%    │              87%
++USER 179 CDRAM 41 PHY 64     │          CHARGING
++CPU LOAD AVG 13% CTX 842/S   │ TEMP 31  VOLT 3820
+                              │ CYC 214  SOH 98
+ ─────────────────────────────┼────────────────────────────
+ STORAGE 552×172              │ SYSTEM 360×172
+ UX0            12.4/29.5 GB  │ FW            3.65
+ UMA0                  N/A    │ RUN     00:14:22
+ ─────────────────────────────┴────────────────────────────
+ PLUGINS 924×140   (below both columns, on the canvas)
+ 7  PLUGINS LISTED
+    KERNEL 3  SYSTEM 2  SYSTEM APPS 1
+ ──────────────────────────────────────────────────────────
+ FRAME  58.4 FPS  17.1 MS   ─┼─────┼───┼───
+ ```
+ 
+ COCKPIT ships no system plugin, kernel plugin, FTP server, Quick Menu panel, or
+ clock bridge. The VPK contains `eboot.bin` and `sce_sys/` only, and the app never
+-adds a COCKPIT line to `config.txt`. CORE reports memory, not clocks: without a
+-kernel or bridge source the userland request is not the applied value, so the
+-rows were removed with the bridge (D99).
++adds a COCKPIT line to `config.txt`. CORE reports per-core CPU load from the
++userland scheduler counters, plus the memory pools. It does not report applied
++clocks: without a kernel or bridge source the userland request is not the
++applied value, so those rows were removed with the bridge (D99). GPU work is the
++CDRAM/PHY pools here and the FRAME strip below (D103).
+ 
+ The header carries `HOME` and `PLUGINS` tabs. Press L/R to switch. HOME carries a
+ full-width `PLUGINS` block below STORAGE and SYSTEM with the activated count,
+ `PLUGINS LISTED`, the non-empty group counts, and a config warning; it is
+ read-only and sits below the fold, so scroll HOME down to it. Pending edits are
+ shown only on the PLUGINS tab.
+ 
+ <p align="center">
+   <img src="vita-cockpit/docs/preview-home-plugins.png" alt="COCKPIT HOME plugin summary block" width="640">
+ </p>
+@@ -186,21 +188,21 @@ Descriptions cover 155 known taiHEN plugins; an entry outside the catalog says
+ `N/A`.
+ 
+ A number the platform cannot report renders `--`; it is never guessed or
+ substituted with zero. Storage uses `N/A` for an unmounted volume and `ERR xx`
+ for a refused read.
+ 
+ ### Test and preview without hardware
+ 
+ ```sh
+ cd vita-cockpit
+-./tools/test/run.sh      # 1,371 host checks (130 metrics, 1,208 editor, 33 UI)
++./tools/test/run.sh      # 1,386 host checks (145 metrics, 1,208 editor, 33 UI)
+ ./tools/preview/run.sh   # 38 960×544 PNGs in build/preview/
+ ```
+ 
+ The tests link the real sampling policy against a fake platform and assert the
+ alert boundary, failed-read handling, unit conversions, history ring, frame
+ floor, the plugin table, the staged draft, the one-write commit, the two restore
+ points and contextual undo, the locked-removal and no-change refusals, the
+ saved/last-write truth table, the dock focus and battery gate, the write
+ transaction and its restore path, and the input reducer. The preview renders the
+ shipped composition through a software vita2d shim, so a PNG proves the policy
+diff --git a/agent-wiki/12-projects.md b/agent-wiki/12-projects.md
+index 22c5484..c1bb2c8 100644
+--- a/agent-wiki/12-projects.md
++++ b/agent-wiki/12-projects.md
+@@ -1,22 +1,24 @@
+ # 12 — Working Projects
+ 
+-Three projects build here; `vita-cockpit` has run on hardware. The public
++Three projects build here; `vita-cockpit` has run on hardware. A fourth,
++`vitaFTPShell`, is in planning and has no source tree yet. The public
+ repository is <https://github.com/upakul/vitahomebrew>. Run commands from the
+ workspace root: the directory containing `AGENTS.md`, which
+ `git rev-parse --show-toplevel` prints.
+ 
+ | Project | Path | Purpose | Auth |
+ |---|---|---|---|
+ | `vita-cap-test` | `vita-cap-test` | I/O + audio + WiFi + library test | safe `...0002` |
+ | `vita-kernel-demo` | `vita-kernel-demo` | App + `.skprx` + custom syscall (blocked) | unsafe `...0001` |
+ | `vita-cockpit` | `vita-cockpit` | System dashboard in Cyberpunk 2077 HUD style | unsafe `...0001` default; `--safe` `...0002` |
++| `vitaFTPShell` | `vitaFTPShell` | FTP client + local file manager (planning) | not decided |
+ 
+ Source copies are in [`examples/`](examples/), including `examples/cockpit/` for
+ the port, the adapter, the panel contract, and the layout table.
+ 
+ ---
+ 
+ ## 1. `vita-cap-test`
+ 
+ ### What it does
+ 
+@@ -199,42 +201,47 @@ A two-tab system dashboard: memory, storage, power, identity, and frame health
+ on HOME, plus a PLUGINS ledger that stages enable/disable changes and writes one
+ batch from an inline dock. Cyberpunk 2077 HUD as the visual reference.
+ 
+ It ships **no system plugin, kernel plugin, FTP server, Quick Menu panel, or
+ clock bridge** (D99). The product is the app: one `eboot.bin` and `sce_sys/` in
+ the VPK. The plugin manager writes only the active `config.txt` and its
+ `.original`/`.session`/`.undo` snapshots; `boot_config.txt` is never opened.
+ 
+ ### Status
+ 
+-**Hardware-verified at b13 for the dashboard layout; b150 is built but not on
+-hardware.** b13 drew text, memory, power, identity, and frame. b124 proved the
+-app and PLUGINS screen draw but the (now removed) plugin install wrote nothing.
++**Hardware-verified at b13 for the dashboard layout; b150 was reported working
++by the user on 2026-11-08; b153 adds the CPU readout and is not on hardware yet.**
++b13 drew text, memory, power, identity, and frame. b124 proved the app and
++PLUGINS screen draw but the (now removed) plugin install wrote nothing.
+ The 2026-11-05 console session then established the limits of the plugin route:
+ 
+ - A minimal `*main` probe loaded and wrote `ur0:data/COCKPIT/probe.log`; it
+   reported `net=0` — SceNet is **not** loaded in SceShell at boot.
+ - The b141 shell plugin hard-imported SceNet/SceNetCtl, so it never reached
+   `module_start`; the failed `*main` batch took PSVshellPlus down with it.
+ - A diagnostic loader called `sceSysmoduleLoadModule(SCE_SYSMODULE_NET)` then
+   `sceKernelLoadStartModule("ur0:tai/cockpit_system.suprx")` from `*main`; the
+   console then failed to boot with `C1-14738-3`.
+ - The console was recovered with hold-L from the verified `ur0:tai_bkp` copy.
+   The loader approach is rejected; D99 removes the whole plugin surface.
+ 
+ b150 removes `system-plugin/` (shell, RCO, manifest, FTP worker, `libftpvita`
+ patch, PAF toolchain, clock bridge), the app-side install/remove/force policy,
+ the self-plugin block, choice modals, private editor batches, and the path guard.
+ CORE no longer shows ARM/GPU/BUS: without a kernel or bridge source the userland
+-request is not the applied value, so the rows were removed with the bridge. The
+-dashboard, the transaction dock, restore points, contextual undo, and the
+-battery-gated reboot are unchanged. The project stays `built`.
++request is not the applied value, so the rows were removed with the bridge.
++b153 adds the userland CPU readout: four per-core percentages, the active-core
++average, context-switch and wakeup rates, and a fixed 0–100 % CPU trace, all
++from `sceKernelGetSystemInfo()` (D103). The memory pools stay; GPU work is the
++CDRAM/PHY pools and the pinned FRAME strip. The dashboard, the transaction dock,
++restore points, contextual undo, and the battery-gated reboot are unchanged. The
++project stays `built`.
+ 
+ Runs on the 3.65 console: every panel renders, and `ux0:` reads
+ `17.7/119.3 GB` through `sceAppMgrGetDevInfo`. The shipped build is `UNSAFE` by
+ default (D42) because `uma0:` capacity needs `sceIoDevctl`, which the safe
+ authid refuses; `./build.sh --safe` still builds the restricted variant.
+ `uma0:` reads `--` when no second volume is mounted. The SYSTEM panel shows FW
+ 3.74 because the version string is spoofed; the machine is on 3.65 Enso.
+ 
+ HOME carries a read-only `PLUGINS` summary block below STORAGE and SYSTEM: the
+ listed count at primary scale, `PLUGINS LISTED`, the non-empty group counts,
+@@ -321,60 +328,87 @@ guesswork:
+ | `tools/preview/` | host renderer: draws the real screen to PNG without a Vita |
+ 
+ ### Build
+ 
+ ```sh
+ cd vita-cockpit
+ ./build.sh
+ ```
+ 
+ Output: `build/cockpit-v<version>-b<build>.vpk` (the current artifact is
+-`cockpit-v01.00-b150.vpk`, 130,853 bytes, SHA-256
+-`5143618f9affa68c275c1406819b32377c4662c3fccd143d0a9228a09f53555c`). The VPK
++`cockpit-v01.00-b153.vpk`, 132,568 bytes, SHA-256
++`a691859562423d216a480095ad75101e96164074c99eddc29156f83f8fed484f`). The VPK
+ contains `eboot.bin` and `sce_sys/` only. `build.sh` counts distinct builds in
+ `BUILD_NUMBER`: unchanged sources reuse the number, and only the newest VPK is
+ kept (D46). Upload it with `./send.sh <vita-ip>`.
+ 
+ ### Test and preview without hardware
+ 
+ ```sh
+-./tools/test/run.sh      # 1,371 checks (130 metrics, 1,208 editor, 33 UI) over the sampling policy, plugin editor, draft/commit, restore, undo, recovery, write transaction, dock flow, and input
++./tools/test/run.sh      # 1,386 checks (145 metrics, 1,208 editor, 33 UI) over the CPU/memory sampling policy, plugin editor, draft/commit, restore, undo, recovery, write transaction, dock flow, and input
+ ./tools/preview/run.sh   # 38 PNG states, with an 8,000 draw-call budget (busiest 5,429)
+ ```
+ 
+ ### Preview without hardware
+ 
+ ```sh
+ cd vita-cockpit
+ ./tools/preview/run.sh
+ ```
+ 
+ Writes 38 `build/preview/preview-*.png` states (the authoritative list is in
+ `vita-cockpit/README.md`). It links the shipped composition (`app/screen.c`),
+ the real `theme`, `font`, `panels`, `header`, and `core`, a software vita2d
+ shim, and the shared fake platform in `tools/fake/`. Each scene is produced by
+ driving the fake port through `metrics_sample_slow()`, so a PNG proves the
+ sampling policy ran, not just that the panels can draw. It is not part of the
+ app build.
+ 
++## 4. `vitaFTPShell`
++
++### Status
++
++`planning`. There is no source tree, CMake project, or VPK yet. The strategy is
++[`vitaFTPShell/STRATEGY.md`](../vitaFTPShell/STRATEGY.md).
++
++The product is one console app that is both an FTP client and a local file
++manager: local and remote are two live panes, and moving a file is one action.
++The user is the anonymous-first collector pulling homebrew and media from saved
++public FTP sites, with logins kept for sites that need them.
++
++Server mode is a compatibility surface, not the core bet. It exists so
++VitaShell users need one app instead of two, and it shares the same protocol
++engine.
++
++### Constraints already decided
++
++- Plain FTP only in v1; no SFTP or FTPS.
++- No background daemon or taiHEN system plugin; transfers end with the app.
++- No PC-first workflow and no desktop-client port.
++- No VitaShell feature-parity race.
++- GPLv3, because the local file manager builds on VitaShell. This project is an
++  island inside the MIT workspace; do not copy its code into the MIT projects.
++
+ ## Build environment
+ 
+ | Item | Value |
+ |---|---|
+ | VitaSDK | 2026.08 |
+ | GCC | 15.2.0 |
+ | Host | macOS Apple Silicon |
+ | Target | 3.65 Enso |
+ | CMake | 4.4.4 |
+ 
+ ## Rebuild all
+ 
++`vitaFTPShell` has no build script yet; add it to the loop when it does.
++
+ ```sh
+ export VITASDK="$PWD/vitasdk"
+ export PATH="$VITASDK/bin:$PATH"
+ 
+ for p in vita-cap-test vita-kernel-demo vita-cockpit; do
+   (cd "$p" && ./build.sh)
+ done
+ ```
+ 
+ ## Upload all
+diff --git a/agent-wiki/13-fact-check.md b/agent-wiki/13-fact-check.md
+index 9e861c0..1fb78db 100644
+--- a/agent-wiki/13-fact-check.md
++++ b/agent-wiki/13-fact-check.md
+@@ -6,22 +6,23 @@ untested.
+ ## Verification method
+ 
+ - Read the actual VitaSDK/VitaShell/taiHEN sources.
+ - Built `vita-mksfoex`, `vita-pack-vpk`, and `vita-make-fself` from the current
+   `vita-toolchain` source on macOS.
+ - Generated an SFO and a VPK; inspected the ZIP layout and compression.
+ - Generated FSELFs with no flag, `-s`, and `-ss`; parsed the auth ID at `0x80`.
+ - Built three complete projects with the installed SDK.
+ - Inspected VELF import tables with `vita-elf-create -vvv`.
+ - The hardware evidence is the b13 `vita-cockpit` dashboard run, the b124 UI
+-  observation, and the 2026-11-05 `*main` probe/loader/recovery session recorded
+-  below. b150 has not run on a physical Vita.
++  observation, the user's 2026-11-08 report that b150 works, and the 2026-11-05
++  `*main` probe/loader/recovery session recorded below. b153 has not run on a
++  physical Vita.
+ 
+ ## Core claims
+ 
+ | Claim | Evidence | Result |
+ |---|---|---|
+ | VPK is a ZIP containing `eboot.bin` and `sce_sys/param.sfo` | Built `vita-pack-vpk`, packed a test VPK, `unzip -l` | **Confirmed** |
+ | `param.sfo` defaults: `CATEGORY=gd`, 19 entries in 2026.08 | Built `vita-mksfoex`, generated and parsed an SFO | **Confirmed** |
+ | Raw `vita-make-fself` default vs. CMake helper | Read `vita.cmake`; built `vita-make-fself`, parsed auth ID | **Confirmed**: raw tool defaults to `...0001`; `vita_create_self` adds `-s` and produces `...0002`; `-ss` produces `...0003` |
+ | VitaShell installs through `ScePromoterUtil` | Read `package_installer.c` | **Confirmed** |
+ | VitaShell extracts to `ux0:data/pkg` | Read `package_installer.h` | **Confirmed** |
+@@ -73,40 +74,41 @@ untested.
+ | Kernel imports | `taihenForKernel`, `SceSysmemForDriver`, `SceCpuForDriver` |
+ | App imports | `KernelDemo :: kdemo_get_open_count`, `kdemo_get_last_path` — the blocker |
+ | Auth ID | `0x2F00000000000001` for both app and plugin |
+ | On-demand load | `[C]` shell-gated by taiHEN; a plain-app load is expected to be denied |
+ | Runtime | Not runnable as designed |
+ 
+ ### `vita-cockpit`
+ 
+ | Check | Result |
+ |---|---|
+-| App build | `[V]` success, 0 compiler warnings: `cockpit-v01.00-b150.vpk`, 130,853 bytes, SHA-256 `5143618f9affa68c275c1406819b32377c4662c3fccd143d0a9228a09f53555c`. The VPK contains `eboot.bin` and `sce_sys/` only: no `.suprx`, `.skprx`, RCO, or manifest (D99). The unstripped ELF is kept as `build/cockpit`. |
++| App build | `[V]` success, 0 compiler warnings: `cockpit-v01.00-b153.vpk`, 132,568 bytes, SHA-256 `a691859562423d216a480095ad75101e96164074c99eddc29156f83f8fed484f`. The VPK contains `eboot.bin` and `sce_sys/` only: no `.suprx`, `.skprx`, RCO, or manifest (D99). The unstripped ELF is kept as `build/cockpit`. |
+ | Auth ID | `[V]` `0x2F00000000000001` (UNSAFE default, D42); `0x2F00000000000002` with `--safe` |
+-| Imports | `[V]` the app calls `ScePower`, `SceSysmem`, `SceIofilemgr`, `SceRtc`, `SceCtrl`, `SceLibKernel`; `SceDisplay`, `SceGxm`, `SceAppMgr`, `SceCommonDialog` arrive through libvita2d. No COCKPIT source calls `SceNet`, `SceNetCtl`, `SceKernelModulemgr`, or `sceKernelLoadStartModule`. The velf still carries `SceNet` symbols (`sceNetRecv`, `sceNetSend`, `sceNetSocketClose`) pulled in by a linked libc member; COCKPIT does not reference them. |
+-| Host tests | `[V]` 130 metrics + 1,208 editor + 33 UI checks, 0 failures (`tools/test/run.sh`) |
++| Imports | `[V]` the app calls `ScePower`, `SceSysmem`, `SceIofilemgr`, `SceRtc`, `SceCtrl`, `SceLibKernel` (`sceKernelGetSystemInfo` is the CPU source); `SceDisplay`, `SceGxm`, `SceAppMgr`, `SceCommonDialog` arrive through libvita2d. No COCKPIT source calls `SceNet`, `SceNetCtl`, `SceKernelModulemgr`, or `sceKernelLoadStartModule`. The velf still carries `SceNet` symbols (`sceNetRecv`, `sceNetSend`, `sceNetSocketClose`) pulled in by a linked libc member; COCKPIT does not reference them. |
++| Host tests | `[V]` 145 metrics + 1,208 editor + 33 UI checks, 0 failures (`tools/test/run.sh`) |
++| CPU readout | `[V]` host tests cover per-core percentages, the active mask, the active-core average, context-switch/wakeup rates, a failed read leaving the trace alone, and the fixed 0–100 % trace; `[C]` `sceKernelGetSystemInfo` and the microsecond `idleClock` unit are unconfirmed on this 3.65 console |
+ | Plugin list | `[V]` a real 19-entry config parses 19/19 and groups as KERNEL 9 / SYSTEM 8 / SYSTEM APPS 1 / ALL TITLES 1; tests cover BOM, comments, long names, section mapping, priority merge, the 64-entry ceiling and its notice, and a path before the first section as a warning |
+ | Plugin editor | `[V]` host tests cover ux0 precedence, empty config, full-path duplicate rows, `*!` halts, lock and warn decisions, launch/working/next-boot status, mixed-row disable-first, locked+missing agreement, missing active/inactive controls, per-line pending, and exact `#` round trips with CRLF, indentation, no final newline, and double comments |
+ | Staged transaction | `[V]` host tests cover stage with zero writes or stats, discard with zero writes, two enables plus one disable, a toggle that cancels out, one commit with exactly one `.undo` and one live write through one shared `commit_text` protocol, stale-file refusal, failed `.undo`, failed live write, unrecovered swap, read-only/locked/NOT REACHED/missing-off refusals, and two-section rows; `[C]` the SDK transaction is not on hardware |
+ | Restore and undo | `[V]` host tests cover `.original`, `.session`, and `.undo` previews, the draft-vs-file diff, `WILL REMOVE`, restore commit with one `.undo` and one snapshot write, draft-discard label, no-change refusal, locked BOOT/HENKAKU removal and `*!`-halt refusal, the read-only refusal for an unreadable live config, missing/unreadable snapshots, a protected undo that never rewrites `.undo` from the live file, a failed undo that survives for retry, a no-live-config undo, the undo repair after an unrecovered write, removed-path pending truth, the failed-save `.undo` preservation, and a failed `.undo` removal staying reported |
+ | Snapshots and undo | `[V]` host tests cover `config.txt.original` created once, `config.txt.session` refreshed each session, one `config.txt.undo` per batch, the contextual undo after a relaunch, and a refused undo after an external edit; `boot_config.txt` is byte-identical with no backup file |
+ | Config write | `[C]` the adapter's verified rename-away swap is implemented and builds; host tests exercise the same transaction, its restore path and `.old` recovery in the fake, not the SDK calls, and the target's rename/read-back semantics are unverified. A failure names the stage (`OPEN`, `DATA`, `CLOSE`, `VERIFY`, `MOVE`, `RENAME`, `READBACK`, `RESTORE`, `UNDO`). |
+-| Host preview render | `[V]` 38 states rendered through the shipped composition (`tools/preview/run.sh`), busiest 5,429 draw calls against the 8,000 budget; CORE has no clock row |
++| Host preview render | `[V]` 38 states rendered through the shipped composition (`tools/preview/run.sh`), busiest 5,429 draw calls against the 8,000 budget; CORE has per-core CPU rows and no clock row |
+ | Tabs and summary | `[V]` host preview: the 64 px header carries only HOME/PLUGINS tabs, the wall clock and the hazard band at y 48; the loaded count is a full-width `PLUGINS` block below STORAGE/SYSTEM (D67), reached by scrolling HOME |
+ | Screen layout | `[V]` host preview: the 64 px header; FRAME is on HOME only; PLUGINS uses a 472 px band to screen y 536 with an 8 px bottom margin, and its dock reaches the bottom (D81); the split rocker is OFF-left/ON-right and the dock has 12 px inner top/bottom padding (D83) |
+ | Transaction dock | `[V]` host tests cover the `ui/plugin_nav` event routing, the SAVE-vs-CONFIRM mapping, and the scroll clamps; the preview renders the header normal/DRAFT/PREVIEW/exception, row ON/OFF/MIXED/BOOT/LOCKED/MISSING/NOT REACHED, preview list and `REMOVING`, idle/draft/preview/saved/last-write/battery-blocked/battery-unknown/no-change/locked-removal/write-error/idle-error/save-only dock states. The dock is 64/159/123/111 px by state with 12 px inner top/bottom padding, 34 px primary and 28 px secondary pressable slabs, a yellow commit, white focus outlines, and a dedicated warning line (D81, D83); `[C]` the interactive flow, press feel, and stick feel are unverified on hardware |
+ | Console evidence 2026-11-05 | `[V]` a minimal `*main` probe plugin loaded and wrote `ur0:data/COCKPIT/probe.log` with `probe` and `net=0`: `sceSysmoduleIsLoaded(SCE_SYSMODULE_NET)` returns 0 in SceShell on this 3.65 Enso console. The b141 shell plugin (hard SceNet/SceNetCtl imports) never reached `module_start`, and its failed `*main` batch stopped PSVshellPlus. A diagnostic loader that called `sceSysmoduleLoadModule(SCE_SYSMODULE_NET)` then `sceKernelLoadStartModule("ur0:tai/cockpit_system.suprx")` from `*main` caused `C1-14738-3` at boot. The console was recovered with hold-L from the verified `ur0:tai_bkp` copy (49 files, 604 KB). The loader is rejected and the whole plugin surface is removed (D99). |
+ | No plugin payload | `[V]` `system-plugin/` and the app-side install/remove/force policy are deleted; no source path names `cockpit_system.suprx`, `cockpit_plugin.rco`, `plugin.manifest`, `status.txt`, or `control.txt`; no `SceNet`/`SceNetCtl` call remains. `config.txt` is only read and edited, never appended to by the app. |
+ | b74 startup crash | `[V]` C2-12828-1. The core's `THREAD_INFO` names `COCKPIT01`, stop reason `0x30003` (prefetch abort), PC `0`, and r0 `0x812c0ae4`; the app's `platform_read_clocks` passes exactly that stack address as `&reading` to `cockpit_clocks_read`. The weak import was bound to zero before the module loaded. b77 removed it; D99 removes the whole clock path. The supplied `.psp2dmp.tmp` is only 2,048 bytes, so the register note and stack are truncated; the PC/stop-reason/thread record is intact. |
+ | Pending baseline | `[C]` session-scoped: after `SAVE, REBOOT LATER`, a relaunch re-reads the saved file as the new baseline and the dock shows `LAST WRITE - UNDO AVAILABLE`, not a `SAVED` banner (D59, D75). A restore that removes a launch-active path keeps `SAVED` with `REBOOT NOW` (host-tested; hardware unverified) |
+ | Plugin descriptions | 155 rows: every AutoPlugin2 Vita catalog path plus iTLS, libshacccg, YAMT and HENkaku; 10 rows marked `[C]` for missing or corrected text |
+-| Runtime | `[V]` 2026-11-02 at b13: all panels render on the 3.65 console. 2026-11-04 at b124: the app, first-launch prompt, and PLUGINS screen draw. 2026-11-05: the plugin path failed as recorded above; b150 removes it and has not run on hardware yet. |
++| Runtime | `[V]` 2026-11-02 at b13: all panels render on the 3.65 console. 2026-11-04 at b124: the app, first-launch prompt, and PLUGINS screen draw. 2026-11-05: the plugin path failed as recorded above; b150 removes it and the user reports it works on 2026-11-08. b153 adds the CPU readout and has not run on hardware yet. |
+ | Cold reset | `[V]` `scePowerRequestColdReset` is declared in `psp2/power.h`; `[C]` that an UNSAFE userland eboot may perform it on 3.65 Enso |
+ | Reboot and undo | `[V]` host preview renders the saved/last-write dock, the restore previews, and the write error; the actual cold reset, restore write, and undo write are unverified on hardware |
+ | `SceIoDevInfo` | Uses the SDK type, 24 bytes, not the 16-byte community struct |
+ | Model string | Reports `PSVITA`, because `sceKernelGetModel()` cannot tell PCH-1000 from PCH-2000 |
+ 
+ ## Community claims / caveats
+ 
+ These are widely reported but not all verified against primary sources:
+ 
+ | Claim | Status | Note |
+@@ -135,21 +137,21 @@ LLM-generated compilations. They contain confidently wrong claims, including:
+ When a claim can be checked in `vita.cmake`, `vita-make-fself.c`, the headers, or
+ a real project's source, check it. Prefer primary sources and reproducible
+ builds.
+ 
+ ## What was not tested
+ 
+ - On-device launch/install of the three VPKs.
+ - On-device kernel plugin load/hook behavior on 3.65.
+ - Audio output, WiFi/DNS/HTTP on the physical Vita.
+ - 3.60 vs 3.65 NID differences for every API used.
+-- The b150 dashboard/manager checklist: the transaction dock, restore previews,
++- The b153 CPU readout (`sceKernelGetSystemInfo`, idle-clock unit) and the dashboard/manager checklist: the transaction dock, restore previews,
+   contextual undo, battery gate, and save-without-reboot on hardware.
+ - The target's rename/replace and immediate read-back semantics.
+ - The removed plugin surface: no COCKPIT shell plugin, FTP worker, Quick Menu
+   panel, or clock bridge exists to test. The `*main` probe and the `C1-14738-3`
+   loader failure are recorded above.
+ - `vitaGL`/`libshacccg.suprx` workflow.
+ - Camera, microphone, video, Bluetooth.
+ 
+ These are documented from sources and community reports, not measured here.
+ 
+diff --git a/vita-cockpit/BUILD_NUMBER b/vita-cockpit/BUILD_NUMBER
+index fa8f08c..7f1ddd5 100644
+--- a/vita-cockpit/BUILD_NUMBER
++++ b/vita-cockpit/BUILD_NUMBER
+@@ -1 +1 @@
+-150
++153
+diff --git a/vita-cockpit/README.md b/vita-cockpit/README.md
+index 986c6ea..b24213d 100644
+--- a/vita-cockpit/README.md
++++ b/vita-cockpit/README.md
+@@ -10,22 +10,23 @@ contextual undo cover the way back.
+ 
+ COCKPIT ships no system or kernel plugin. It installs nothing outside its own
+ VPK and never adds a line to `config.txt` itself; the manager only edits the
+ lines that are already there.
+ 
+ ```
+ ┌──────────────────────────────────────────────────────────────┐
+ │ COCKPIT      HOME  PLUGINS  L/R                  14:22:07    │
+ ├──────────────────────────────────────────────────────────────┤
+ │ CORE 552×210                 │ POWER 360×210                  │
++│ C0 18%  C1 22%  C2 9%  C3 4% │                                │
+ │ USER 179  CDRAM 41  PHY   64 │             87%                │
+-│ FREE USER MEM MB    171-193  │           CHARGING             │
++│ CPU LOAD AVG 13%  CTX 842/S  │           CHARGING             │
+ │      ╱‾╲__╱‾╲__              │  TEMP  31   VOLT  3820         │
+ │                              │  CYC  214   SOH     98         │
+ ├──────────────────────────────┼────────────────────────────────┤
+ │ STORAGE 552×172              │ SYSTEM 360×172                 │
+ │ UX0             12.4/29.5 GB │ FW                  3.65       │
+ │ ▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░  │ RUN           00:14:22         │
+ │ UMA0                   N/A   │ MODEL            PSVITA        │
+ │ ░░░░░░░░░░░░░░░░░░░░░░░░░░░  │                                │
+ ├──────────────────────────────────────────────────────────────┤
+ │ PLUGINS 924×140   (below both columns, on the canvas)        │
+@@ -34,30 +35,32 @@ lines that are already there.
+ ├──────────────────────────────────────────────────────────────┤
+ │ FRAME  58.4 FPS  17.1 MS   ─┼─────┼───┼──                   │
+ └──────────────────────────────────────────────────────────────┘
+ ```
+ 
+ - **Target:** PS Vita, firmware 3.65, permanent Enso CFW. PSTV out of scope.
+ - **Toolchain:** VitaSDK 2026.08, libvita2d.
+ - **Auth:** UNSAFE eboot by default (`0x2F00000000000001`), because `uma0:`
+   capacity needs `sceIoDevctl` (D42). `./build.sh --safe` builds the
+   restricted `0x2F00000000000002` variant.
+-- **Status:** builds and packages (`cockpit-v01.00-b150.vpk`, 130,853 bytes),
+-  and runs on the 3.65 console at b13. The dashboard and the plugin editor are
+-  the whole product; every system-plugin, FTP, Quick Menu, and clock-bridge
+-  source file was removed in D99. The VPK contains only `eboot.bin` and
+-  `sce_sys/`. 1,371 host checks and 38 previews pass. b150 has not run on
+-  hardware, so the project stays `built`.
+-- **Clocks:** CORE no longer reports ARM/GPU/BUS. Without a kernel or bridge
+-  source the userland request is not the applied value, and printing it would
+-  violate the product rule. The clock rows and the bridge were removed
+-  together (D99).
++- **Status:** builds and packages (`cockpit-v01.00-b153.vpk`, 132,568 bytes).
++  The user reports b150 runs on the 3.65 console; b153 adds the CPU readout and
++  has not run yet. The dashboard and the plugin editor are the whole product;
++  every system-plugin, FTP, Quick Menu, and clock-bridge source file was removed
++  in D99. The VPK contains only `eboot.bin` and `sce_sys/`. 1,386 host checks and
++  38 previews pass. The project stays `built` until b153 is verified on hardware.
++- **CPU and GPU:** CORE reports per-core CPU load, the active-core average, and
++  context-switch/wakeup rates from the userland scheduler counters (D103). It
++  does not report applied ARM/GPU/BUS clocks: the userland ScePower getters
++  return this process's request, not the machine's value. It also has no
++  GPU-load row, because userland exposes no GPU load or applied GPU clock. The
++  CDRAM/PHY pools and the pinned FRAME strip are the GPU view.
+ 
+ The HOME `PLUGINS` block sits below STORAGE and SYSTEM, spanning both columns. It
+ shows the listed count at primary scale, `PLUGINS LISTED`, the non-empty group
+ counts, and a config warning. It reports the launch set and is read-only; scroll
+ HOME down to it. Pending edits appear only on the PLUGINS tab that made them.
+ 
+ The plugin screen resolves the active config the way taiHEN does — `ux0:`
+ first, `ur0:` fallback — and names any ignored file. It lists every path in that
+ config, active or commented, grouped by load target, and one row per unique path.
+ Each row reports the launch set (`LOADED`, `NOT LOADED`, `MIXED`, `MISSING`,
+@@ -110,25 +113,25 @@ place.
+ | [docs/DESIGN.md](docs/DESIGN.md) | Visual language, palette, typography, layout |
+ | [docs/DECISIONS.md](docs/DECISIONS.md) | Numbered decision log with context and consequences |
+ 
+ ## Build
+ 
+ ```sh
+ ./build.sh            # UNSAFE eboot (the default; needs Unsafe Homebrew on)
+ ./build.sh --safe     # restricted eboot, marked -safe in the filename
+ ```
+ 
+-Produces `build/cockpit-v<version>-b<build>.vpk`, e.g. `cockpit-v01.00-b150.vpk`.
++Produces `build/cockpit-v<version>-b<build>.vpk`, e.g. `cockpit-v01.00-b153.vpk`.
+ The build number counts distinct builds and is kept in `BUILD_NUMBER`: unchanged
+-sources reuse the number, and only the newest VPK is kept (D46). The b150
+-artifact is 130,853 bytes, SHA-256
+-`5143618f9affa68c275c1406819b32377c4662c3fccd143d0a9228a09f53555c`. It contains
++sources reuse the number, and only the newest VPK is kept (D46). The b153
++artifact is 132,568 bytes, SHA-256
++`a691859562423d216a480095ad75101e96164074c99eddc29156f83f8fed484f`. It contains
+ `eboot.bin` and `sce_sys/` only: no `.suprx`, `.skprx`, RCO, or manifest is
+ packed, installed, or loaded. Upload it with:
+ 
+ ```sh
+ ./send.sh <vita-ip>
+ ```
+ 
+ VitaShell must be running its FTP server on port 1337. The URL form is
+ `ftp://<ip>:1337/ux0:/data/` — colon followed by slash.
+ 
+@@ -154,21 +157,21 @@ primary, and unavailable actions are dimmed and skipped.
+ 
+ ```sh
+ ./tools/test/run.sh
+ ```
+ 
+ Links the real `core/` against a fake port and asserts the sampling policy, the
+ plugin config model, the staged draft, the one-write commit, the two restore
+ points and contextual undo, the exact `#` edit, BOM and invalid-path handling,
+ the transactional write and its failure/restore path, the dock state/action/focus
+ policy, the input reducer, and the navigation routing. Exits non-zero on
+-failure. 1,371 checks (130 metrics, 1,208 editor, 33 UI), 0 failures.
++failure. 1,386 checks (145 metrics, 1,208 editor, 33 UI), 0 failures.
+ 
+ ## Preview without hardware
+ 
+ ```sh
+ ./tools/preview/run.sh
+ ```
+ 
+ Renders the shipped composition (`app/screen.c`) through a software vita2d shim
+ and the same fake platform, writing 38 scenes under `build/preview/`:
+ `preview-healthy.png`, `preview-alert.png`,
+diff --git a/vita-cockpit/docs/ARCHITECTURE.md b/vita-cockpit/docs/ARCHITECTURE.md
+index 6c2e56f..f0057c4 100644
+--- a/vita-cockpit/docs/ARCHITECTURE.md
++++ b/vita-cockpit/docs/ARCHITECTURE.md
+@@ -134,20 +134,21 @@ No cycles. `core` never includes `gfx`, `panels`, `ui`, or `app`.
+ 
+ ```c
+ typedef struct {
+     uint64_t free_bytes;
+     uint64_t total_bytes;
+     int ok;
+ } PlatformStorage;
+ 
+ void platform_read_storage(int index, PlatformStorage *out);
+ void platform_read_memory(PlatformMemory *out);
++void platform_read_cpu(PlatformCpu *out);
+ void platform_read_power(PlatformPower *out);
+ void platform_read_identity(PlatformIdentity *out);
+ void platform_read_clock(PlatformClock *out);
+ double platform_uptime_seconds(void);
+ 
+ int platform_file_exists(const char *path);
+ 
+ typedef enum {
+     PLATFORM_READ_ABSENT = 0,
+     PLATFORM_READ_OK,
+@@ -174,21 +175,23 @@ PlatformReadStatus platform_read_backup(const char *path, PlatformBackup kind,
+ int platform_snapshot_undo(const char *path, const char *text, int len);
+ int platform_request_reboot(void);
+ 
+ typedef void (*PlatformDirCallback)(const char *name, int is_dir, void *user);
+ int platform_list_dir(const char *dirname, PlatformDirCallback cb, void *user);
+ ```
+ 
+ There is no clock reading in the port. The old `PlatformClocks` and the
+ app-local `.suprx` were removed together (D99): without a kernel or bridge
+ source, the userland request is not the applied value, and the project does not
+-render a number it cannot stand behind. CORE reports memory only.
++render a number it cannot stand behind. CORE reports CPU load and memory; the
++CPU reading comes from `platform_read_cpu`, which returns the userland
++scheduler counters, not a clock (D103).
+ 
+ The config calls stay in the same adapter because every SDK file operation
+ belongs to one module (D7). `platform_read_config` opens first and distinguishes
+ absent, empty, too-large, and unreadable; a short read is unreadable.
+ `platform_write_config` writes a verified sibling, moves the original aside,
+ moves the sibling into place, and reads the live file back; `platform_write_error`
+ names the stage that failed so a console report is actionable. `platform_backup_config`
+ writes `config.txt.original` once and `config.txt.session` every launch.
+ `platform_read_backup` exposes the three snapshots to the editor's preview: scan
+ caches `.original` and `.session` availability, and reads `.undo` only to derive
+@@ -257,21 +260,21 @@ the panel.
+ ```
+ 
+ Panels never call the SDK and never mutate metrics. They read `g_metrics` and
+ draw. Sampling is the only writer.
+ 
+ ### Cadence
+ 
+ | Rate | What | Why |
+ |---|---|---|
+ | every frame | frame time, FPS (EMA, α = 0.05) | needs frame resolution |
+-| 10 Hz | memory, storage, power, identity, clock | syscalls are not free; these change slowly |
++| 10 Hz | memory, CPU, storage, power, identity, clock | syscalls are not free; these change slowly |
+ 
+ 10 Hz × 200 samples = a 20-second trace.
+ 
+ ### Editor and input
+ 
+ ```
+ pad ─► core/input ─► app/app ─► ui/plugin_flow ─► app/app ─► core/plugin_editor
+        (events,     (adapter,   (dock state,      (command)   (working text,
+         scroll_y)    dispatch)   focus, copy)                  preview, commit)
+                                                                    │
+@@ -306,29 +309,31 @@ cached facts and draws; it never reads, stats, or writes a file.
+ | `SceIoDevInfo` layout, 24 bytes | `[V]` `psp2common/kernel/iofilemgr.h` | `platform_psp2.c` |
+ | `sceIoDevctl("ux0:", 0x3001, …)` is the device-info command | `[V]` `psp2/io/devctl.h` demonstrates it verbatim | `platform_psp2.c` |
+ | Its results are byte counts | `[C]` the unit is documented nowhere | `platform_psp2.c` |
+ | Model codes `SCE_KERNEL_MODEL_VITA` / `SCE_KERNEL_MODEL_VITATV` | `[V]` `psp2common/kernel/sysmem.h` | `platform_psp2.c` |
+ | `sceKernelGetModel()` cannot separate PCH-1000 from PCH-2000 | `[V]` one code for both | `platform_psp2.c` |
+ | `sceIoRename` to an absent target | `[C]` the fake exercises the transaction; the SDK call is not run on hardware | `platform_psp2.c` |
+ | Replacing the live config without rename-over | `[C]` the rename-away swap is implemented; the target's rename semantics are unverified | `platform_psp2.c` |
+ | Immediate read-back after the swap sees the new bytes | `[C]` the adapter verifies by reading the live file; the fake models it, hardware does not yet | `platform_psp2.c` |
+ | Reading `.original`, `.session`, and `.undo` through the port | `[C]` the host fake reads them; the target's SDK reads are not exercised on hardware | `platform_psp2.c` |
+ | `scePowerRequestColdReset` exists | `[V]` `psp2/power.h`; linked from `ScePower` | `platform_psp2.c` |
++| `sceKernelGetSystemInfo` is a userland `SceLibKernel` export with per-core idle, wakeup, and thread-switch counters | `[V]` `psp2/kernel/threadmgr/thread.h` | `platform_psp2.c` |
++| `cpuInfo[].idleClock` advances in microseconds | `[C]` the header does not state the unit; the adapter rejects a delta larger than elapsed time | `platform_psp2.c` |
+ | A userland UNSAFE eboot may cold-reset on 3.65 Enso | `[C]` the header says it always returns 0; the reset itself is unverified | `platform_psp2.c` |
+ | `sceIoSyncByFd` flushes data before close | `[V]` declared in `psp2/io/fcntl.h`; its effect is best-effort here | `platform_psp2.c` |
+ | `boot_config.txt` is never opened | `[V]` no source path names it | `core/plugin_editor.c` |
+-| No userland CPU-load API exists | `[V]` absent from `psp2/` | — |
+ 
+-The file and power claims remain `[C]`: the devctl byte unit, the target's
++
++The file, power, and CPU claims remain `[C]`: the devctl byte unit, the target's
+ `sceIoRename`/replace semantics, immediate read-back visibility, reading the
+-three snapshots, whether a userland UNSAFE eboot may cold-reset, and how
+-completely `sceIoSyncByFd` flushes. The read path no longer depends on
++three snapshots, whether a userland UNSAFE eboot may cold-reset, how completely
++`sceIoSyncByFd` flushes, and the idle-clock unit on 3.65. The read path no longer depends on
+ `sceIoGetstat` succeeding before `sceIoOpen`, and the normal write path no longer
+ renames over an existing file.
+ 
+ If a `[C]` claim is corrected on hardware, correct it in the file its Where
+ column names.
+ 
+ ## 8. Panel contract
+ 
+ ```c
+ typedef struct Panel {
+diff --git a/vita-cockpit/docs/DECISIONS.md b/vita-cockpit/docs/DECISIONS.md
+index 5b67659..b66c417 100644
+--- a/vita-cockpit/docs/DECISIONS.md
++++ b/vita-cockpit/docs/DECISIONS.md
+@@ -62,21 +62,22 @@ have made small labels unreadable.
+ ## D5 — Yellow leads; red is reserved
+ 
+ **Status:** Superseded by D40; red returns as a narrow off-state token in D78
+ **Context:** A HUD with several saturated colours has no way to signal urgency.
+ **Decision:** Yellow is the only saturated colour used at rest. Red means the
+ machine needs attention.
+ **Consequence:** A red screen is unambiguous. Costs colour variety.
+ 
+ ## D6 — No CPU load percentage
+ 
+-**Status:** Accepted
++**Status:** Superseded by D103 (2026-11-08); the premise that no userland API
++reports system CPU utilisation was wrong.
+ **Context:** No userland API reports system-wide CPU utilisation. `psp2/power.h`
+ exposes clock *frequency*, not load.
+ **Decision:** Show clock frequency and the app's own frame time. Do not
+ synthesise a percentage.
+ **Consequence:** Every number is real. A fabricated "CPU 47 %" would discredit
+ the rest of the panel.
+ **Rejected:** deriving load from idle-time sampling, which would measure this
+ process, not the system.
+ 
+ ## D7 — Platform access behind a port
+@@ -1981,10 +1982,19 @@ have not run on hardware.
+ 
+ `[V]` 1,371 host checks (130 metrics, 1,208 editor, 33 UI), 38 previews
+ (busiest 5,429/8,000), clean default and safe builds. b150 is 130,853 bytes,
+ SHA-256 `5143618f9affa68c275c1406819b32377c4662c3fccd143d0a9228a09f53555c`;
+ the VPK contains `eboot.bin` and `sce_sys/` only. New coverage: orphan `.old`
+ survival, oversized/comment-only/no-live undo, `.undo` rollback after a failed
+ snapshot, section moves and KERNEL-removal warnings, unrecovered repair state,
+ zero-frame history, per-field power validity, list-dir failure, fake
+ case-insensitivity, and the safe authid. `[C]` none of these paths has run on
+ the console; the hardware checklist is the next action.
++
++## D103 — CORE reports system CPU load from the userland scheduler counters
++
++**Status:** Accepted (2026-11-08; supersedes D6)
++**Context:** D6 concluded that no userland API reports system-wide CPU utilisation and rejected idle-time sampling as measuring only this process. That premise was wrong. `sceKernelGetSystemInfo()` is a normal `SceLibKernel` export: `SceKernelSystemInfo` carries a cumulative idle clock, a wakeup count, and a thread-switch count for each of the four cores. PSVshell derives per-core load from the idle-clock delta over a microsecond tick; the same calculation works from userland without a plugin. CORE had lost its ARM/GPU/BUS rows in D99 and was left with memory only, which made the hero panel answer a narrower question than the machine it describes.
++**Decision:** CORE shows four per-core CPU percentages, their active-core average, and context-switch/wakeup rates per second. The 20 s trace becomes aggregate CPU load on a fixed 0–100 % axis; the three memory pools stay as the second row. The platform adapter returns raw counters (`idle_us`, `time_us`, cumulative switches/wakeups, active mask); `core/metrics.c` owns the delta and percentage policy. A core outside `activeCpuMask` renders `--`, not 0 %. If an idle delta exceeds the elapsed time, the sample is refused and the panel renders `--`, so a unit mismatch cannot become a fabricated percentage. The applied ARM/GPU/BUS clocks remain omitted: the userland ScePower getters return this process's request, not the machine's value. GPU work is represented by the CDRAM/PHY pools and the pinned FRAME strip; there is no GPU-load or applied-GPU-clock API in userland.
++**Consequence:** The hero panel answers "what is the machine doing, and how much memory is left?" with real system data. It adds no plugin, no boot surface, and no new import outside `SceLibKernel` (already linked). `sceKernelGetSystemInfo` and the microseconds interpretation of `idleClock` are `[C]` until a console run confirms them; a failure degrades to `--` rather than a wrong number.
++**Rejected:** keeping the memory-only panel; a kernel plugin or bridge for clocks; printing the ScePower request as `REQ`; deriving CPU load from this process's run time; a fabricated GPU load or `GPU CLK N/A` row; an autoscaling CPU trace that would make 5 % look like 95 %.
++**Verification:** `[V]` host tests cover per-core percentages, the active mask, the aggregate, the rates, a delta larger than elapsed time failing closed, a failed read leaving the trace alone, and the fixed-scale trace. `[C]` `sceKernelGetSystemInfo` availability and `idleClock` units on 3.65 Enso are unconfirmed until the b153 console run.
+diff --git a/vita-cockpit/docs/DESIGN.md b/vita-cockpit/docs/DESIGN.md
+index f432121..2962e8d 100644
+--- a/vita-cockpit/docs/DESIGN.md
++++ b/vita-cockpit/docs/DESIGN.md
+@@ -14,23 +14,23 @@ not survive a 5-inch screen.
+ Fixed 960 × 544 output, no scaling (D13). The *panel area* is a scrolling
+ viewport onto a taller canvas (D45), so regions no longer have to fit on one
+ screen. The header is pinned. On HOME the FRAME strip is pinned too; on PLUGINS
+ the ledger and its transaction dock own the bottom of the screen (D81).
+ 
+ ```
+ ┌──────────────────────────────────────────────────────────────┐
+ │ COCKPIT      HOME  PLUGINS  L/R                  14:22:07    │
+ ├──────────────────────────────────────────────────────────────┤
+ │ CORE 552×210                 │ POWER 360×210                  │
+-│ ARM  333  GPU  166  BUS  166 │                                │
++│ C0 18%  C1 22%  C2 9%  C3 4% │                                │
+ │ USER 179  CDRAM 41  PHY   64 │             87%                │
+-│ FREE USER MEM MB    171-193  │           CHARGING             │
++│ CPU LOAD AVG 13%  CTX 842/S  │           CHARGING             │
+ │      ╱‾╲__╱‾╲__              │  TEMP  31   VOLT  3820         │
+ │                              │  CYC  214   SOH     98         │
+ ├──────────────────────────────┼────────────────────────────────┤
+ │ STORAGE 552×172              │ SYSTEM 360×172                 │
+ │ UX0             12.4/29.5 GB │ FW                  3.65       │
+ │ ▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░  │ RUN           00:14:22         │
+ │ UMA0                   N/A   │ MODEL            PSVITA        │
+ │ ░░░░░░░░░░░░░░░░░░░░░░░░░░░  │                                │
+ ├──────────────────────────────────────────────────────────────┤
+ │ PLUGINS 924×140   (on the canvas, below both columns)        │
+@@ -99,22 +99,22 @@ colour off the palette is a colour bug (D48).
+ Readout rows use `READOUT_STRIDE`, defined as `LINE_H(PX_VALUE) + SP_4` = 37.
+ Deriving the stride from the value height means changing the type ladder cannot
+ silently close the gap.
+ 
+ ### Why it is not a grid of equal cards
+ 
+ Six identical panels in a 3 × 2 grid is the default dashboard, and it says
+ nothing about the machine. This layout has three tiers:
+ 
+ - **Hero** — CORE, 552 × 210, half again the area of any satellite. It carries
+-  the memory pools and their trend together, because headroom is the question
+-  this panel answers.
++  the CPU load trend and the memory pools together, because headroom — CPU time
++  and memory — is the question this panel answers.
+ - **Satellites** — STORAGE, POWER, SYSTEM. Sized by how much they hold.
+ - **Status strip** — FRAME, full width but only 44 px tall, because it measures
+   the app rather than the machine and should not compete with the machine.
+ 
+ Every region is sized by information importance. If a region grows, something
+ else must shrink.
+ 
+ ## 2. Palette
+ 
+ | Token | Hex | Role |
+@@ -214,35 +214,38 @@ Rules:
+  │  ░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+  └──────────────────────────────┘
+ ```
+ 
+ **Hero** — larger chamfer, a second cut at the bottom-left, and brackets:
+ 
+ ```
+  ╱──────────────────────────────────────────────┐╲   28 px chamfers
+  │▏CORE                                         │ ╲
+  │──────────────────────────────────────────────│
+- │  ARM    333     GPU    166     BUS    166    │
++ │  C0  18%   C1  22%   C2   9%   C3   4%       │
+  │  USER   182     CDRAM   41     PHY     64    │
++ │  CPU LOAD AVG 13%   CTX 842/S  WAKE 230/S    │
+  │  ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇▆▅▄▃▂▁                │
+  ╲──────────────────────────────────────────────┘
+   ↑ brackets, 16 px, full accent, on the two square corners
+ ```
+ 
+ The extra cut and the brackets are the only things that distinguish the hero from
+ a satellite. Hierarchy is carried by size and corner treatment, not by colour or
+ decoration.
+ 
+ CORE has no clock row. The applied clocks required a bridge or kernel reader,
+ and both were removed with the system plugin (D99). The userland request is not
+-the applied value, so the row would have been permanently `--`; the memory row
+-and the trace use the space instead.
++the applied value, so the row would have been permanently `--`. The CPU rows and
++the load trace use the space instead (D103). CORE also has no GPU-load or
++applied-GPU-clock row: userland exposes neither. The CDRAM/PHY pools and the
++pinned FRAME strip are the GPU view.
+ 
+ ## 5. Readouts
+ 
+ The core pattern:
+ 
+ ```
+ LABEL                     VALUE
+ px=2 dim                  px=3 white, right-aligned
+ ```
+ 
+@@ -610,16 +613,16 @@ The host preview writes these states under `build/preview/`; the copies in
+ synthetic.
+ 
+ | State | Image |
+ |---|---|
+ | PLUGINS header | [preview-header-normal.png](preview-header-normal.png) |
+ | Row states and badges | [preview-rows.png](preview-rows.png) |
+ | NEXT ON / NEXT OFF | [preview-plugins-next.png](preview-plugins-next.png) |
+ | Restore preview | [preview-preview-list.png](preview-preview-list.png) |
+ | Draft dock | [preview-dock-draft.png](preview-dock-draft.png) |
+ | Saved dock | [preview-dock-saved.png](preview-dock-saved.png) |
+-| CORE, memory only | [preview-healthy.png](preview-healthy.png) |
++| CORE, CPU and memory | [preview-healthy.png](preview-healthy.png) |
+ 
+ The HOME images ([preview-healthy.png](preview-healthy.png),
+ [preview-home-plugins.png](preview-home-plugins.png), and
+ [preview-home-plugins-warning.png](preview-home-plugins-warning.png)) are
+ referenced by the workspace `README.md`.
+diff --git a/vita-cockpit/docs/PROJECT.md b/vita-cockpit/docs/PROJECT.md
+index 64b2e00..2581e72 100644
+--- a/vita-cockpit/docs/PROJECT.md
++++ b/vita-cockpit/docs/PROJECT.md
+@@ -20,38 +20,40 @@ FTP server, and no Quick Menu component (D99). It installs nothing outside its
+ own VPK, and it never adds a COCKPIT line to `config.txt`; the manager only
+ edits lines that are already there.
+ 
+ ## 2. Scope
+ 
+ ### v1 — in
+ 
+ | Region | Contents |
+ |---|---|
+ | HOME header | wordmark, clock, HOME/PLUGINS tabs |
+-| CORE | free user / CDRAM / physical-contiguous pools; 20 s memory trace |
++| CORE | per-core CPU load, active-core average, context-switch/wakeup rates, 20 s CPU-load trace; free user / CDRAM / physical-contiguous pools |
+ | STORAGE | `ux0:`, `uma0:` used and total, with the unit chosen from each volume's size (GB or MB), segmented meters |
+ | POWER | battery percent, charging state, temperature, voltage, cycles, health |
+ | SYSTEM | firmware string, app run time, device model |
+ | PLUGINS summary | a full-width block below both columns: loaded count, group counts, and a config warning |
+ | PLUGINS tab | the full config ledger with a staged working set, an inline transaction dock, launch-set and next-boot badges, split rockers, the two restore previews, contextual last-write undo, and the config snapshots |
+ | FRAME | measured FPS, frame time, 20 s trace |
+ 
+ The wall clock and the wordmark are header chrome, not a panel, so identity
+ appears exactly once on screen.
+ 
+ ### v1 — out
+ 
+ - Network, audio, camera, motion.
+ - Any system, kernel, or app-local `.suprx` / `.skprx`. The applied-clock bridge
+-  and the shell plugin are removed, not disabled (D99). CORE no longer has clock
+-  rows: the userland request is not the applied value, and the project does not
+-  print a number it cannot stand behind.
++  and the shell plugin are removed, not disabled (D99). CORE has no applied
++  ARM/GPU/BUS row: the userland request is not the applied value, and the project
++  does not print a number it cannot stand behind. It also has no GPU-load row;
++  userland exposes neither GPU load nor applied GPU clocks. The CDRAM/PHY pools
++  and the pinned FRAME strip are the GPU view (D103).
+ - An FTP server, a Quick Menu panel, an RCO, a manifest, or an install prompt.
+ - Installing, deleting, or downloading plugin files.
+ - Editing, reading, copying, or backing up `ur0:tai/boot_config.txt` or any Enso
+   boot file. The app never opens it; boot modules are locked by the three known
+   names only.
+ - Manual editing of comments or sections. A toggle changes only `#` markers; a
+   restore replaces the file with the snapshot bytes.
+ - A third tab, plugin presets, a line-level diff, or a draft that survives a
+   restart. The restore preview is plugin-level and replaces the whole file.
+ 
+@@ -62,21 +64,21 @@ network state, screenshot browser, theme switching. The panel contract exists so
+ these are additive, not invasive. See §7.
+ 
+ ## 3. Target and constraints
+ 
+ - PS Vita on firmware 3.65 with permanent Enso CFW.
+ - PSTV is out of scope; its differences are not handled.
+ - Unsafe eboot. Reading `uma0:` capacity needs a call the safe authid refuses,
+   so the app ships `UNSAFE` (D42); `build.sh --safe` builds the restricted
+   variant.
+ - No hardware is reachable from the current development environment. The b13
+-  run in §5 is the only dashboard evidence; b150 has not run on the console.
++  run in §5 is the only dashboard evidence; b153 has not run on the console.
+ - The product is one app. A plugin manager that rewrites `config.txt` is enough
+   surface; adding a resident process or a boot hook increased the failure cost
+   without improving the manager.
+ 
+ The full constraint table, with `[V]`/`[C]` verification status for each
+ platform claim, is in [ARCHITECTURE.md §7](ARCHITECTURE.md#7-platform-claims-and-their-status).
+ 
+ ## 4. Build and deploy
+ 
+ ```sh
+@@ -138,21 +140,21 @@ The bubble appears on LiveArea.
+ ### Every build gets a new artifact name
+ 
+ **Rule: no two builds may share a filename.** A VPK that overwrites its
+ predecessor cannot be identified after the fact — not on the console, not in
+ `ux0:data`, not in a bug report. This is not optional bookkeeping; it is what
+ makes "which build is on the Vita?" answerable.
+ 
+ The artifact is named:
+ 
+ ```
+-build/cockpit-v<version>-b<build>.vpk        e.g. cockpit-v01.00-b150.vpk
++build/cockpit-v<version>-b<build>.vpk        e.g. cockpit-v01.00-b153.vpk
+ ```
+ 
+ | Part | Source | Changes |
+ |---|---|---|
+ | `version` | `VITA_VERSION` in `CMakeLists.txt` | only on a release, and it must stay `##.##` because it also becomes `APP_VER` |
+ | `build` | `BUILD_NUMBER`, incremented by `build.sh` | **every build**, automatically |
+ 
+ The split is deliberate. `APP_VER` has to be `##.##`, so a per-build version
+ would either break the SFO or lie about the release. The build number carries
+ per-build identity; the version carries release identity. Both appear in the
+@@ -177,67 +179,71 @@ Do not hand-edit `BUILD_NUMBER` downward to reuse a number. If numbering has to
+ restart, delete the stale VPKs first and record why.
+ 
+ ## 5. Verification status
+ 
+ COCKPIT inherits the workspace rule: a claim is `[V]` only when it has been
+ checked against a primary source or observed on hardware, and `[C]` when it is
+ community knowledge.
+ 
+ | Area | Status |
+ |---|---|
+-| Builds and packages | `[V]` clean default and safe builds, 0 compiler warnings; `cockpit-v01.00-b150.vpk` is 130,853 bytes, SHA-256 `5143618f9affa68c275c1406819b32377c4662c3fccd143d0a9228a09f53555c`; the VPK contains `eboot.bin` and `sce_sys/` only; the unstripped ELF is kept as `build/cockpit` |
+-| Host tests (sampling, plugin model, draft/commit, restore, undo, input, dock flow) | `[V]` `tools/test/run.sh`, 130 metrics + 1,208 editor + 33 UI checks, 0 failures |
++| Builds and packages | `[V]` clean default and safe builds, 0 compiler warnings; `cockpit-v01.00-b153.vpk` is 132,568 bytes, SHA-256 `a691859562423d216a480095ad75101e96164074c99eddc29156f83f8fed484f`; the VPK contains `eboot.bin` and `sce_sys/` only; the unstripped ELF is kept as `build/cockpit` |
++| Host tests (sampling, plugin model, draft/commit, restore, undo, input, dock flow) | `[V]` `tools/test/run.sh`, 145 metrics + 1,208 editor + 33 UI checks, 0 failures |
+ | Plugin list (`ux0:` first, `ur0:` fallback) | `[V]` host harness keeps a 19-entry real config in full and groups it as KERNEL 9 / SYSTEM 8 / SYSTEM APPS 1 / ALL TITLES 1; host tests cover BOM, commented entries, long names, section mapping, priority merge, the 64-entry ceiling, full-path duplicate rows, `*!` halts, lock/warn policy, the two snapshots, and the exact `#` edit |
+ | Staged transaction and restore | `[V]` host tests cover stage/discard/commit, one `.undo` per batch, the stale-file refusal, the plugin-level restore diff, `WILL REMOVE`, the locked-drop and no-change refusals, the read-only refusal for an unreadable or truncated live config, the `*!` halt before a protected path, the undo repair after an unrecovered write, the removed-path pending truth, the failed-save `.undo` preservation, the saved/last-write truth table, focus and the battery gate. `[C]` the end-to-end flow is unverified on hardware. |
+-| Memory, storage, power, identity APIs declared in SDK | `[V]` header inspection |
++| Memory, CPU, storage, power, identity APIs declared in SDK | `[V]` header inspection; `sceKernelGetSystemInfo` is a userland `SceLibKernel` export |
++| CPU idle-clock unit and 3.65 availability | `[C]` `SceKernelSystemInfo.cpuInfo[].idleClock` is treated as microseconds and validated against elapsed time; the call has not run on this console |
+ | `SceIoDevInfo` layout | `[V]` `psp2common/kernel/iofilemgr.h`, 24 bytes |
+ | `sceIoDevctl("ux0:", 0x3001, …)` command | `[V]` `psp2/io/devctl.h` demonstrates it verbatim |
+ | Storage result unit (bytes) | `[C]` — the devctl byte unit remains unconfirmed |
+ | Device model codes | `[V]` `psp2common/kernel/sysmem.h` |
+ | Screen layout and typography | `[V]` host preview render, 38 states, busiest 5,429 draw calls against the 8,000 budget; header slots, rows, preview list, every dock state with its pressable button model, the HOME-only FRAME strip, the off-left/on-right rocker, the 12 px dock padding, and CORE/POWER outlines (D53, D54, D77, D78, D81, D83, D99) |
+-| Renders on hardware | `[V]` 2026-11-02 (b13): text, memory, power, identity and frame all draw on the console. 2026-11-04 (b124): the app and the PLUGINS screen draw. b150 removes the plugin payload and the failed install surface; it is not on hardware yet. |
++| Renders on hardware | `[V]` 2026-11-02 (b13): text, memory, power, identity and frame all draw on the console. 2026-11-04 (b124): the app and the PLUGINS screen draw. 2026-11-08: the user reports b150 runs on the console; CORE was memory-only. b153 adds the CPU readout and has not run on hardware yet. |
+ | b74 startup crash | `[V]` C2-12828-1; the core names `COCKPIT01`, stop reason `0x30003`, PC `0`, and r0 `0x812c0ae4` (`&reading` at `platform_read_clocks+0x2e`). The weak import and the whole clock path are gone (D99). |
+ | Config write path | `[C]` the adapter's rename-away swap and live read-back are implemented and build; host tests exercise the same transaction in the fake, not the SDK calls, and the target's rename semantics are unverified. A failure names the stage (`OPEN`, `DATA`, `CLOSE`, `VERIFY`, `MOVE`, `RENAME`, `READBACK`, `RESTORE`, `UNDO`). |
+ | Restore reads | `[V]` host tests read `.original`, `.session`, and `.undo` through the same port; `[C]` the SDK file reads are not exercised on hardware. |
+ | Cold reset | `[V]` `scePowerRequestColdReset` is declared in `psp2/power.h`; `[C]` that an UNSAFE userland eboot may perform it on 3.65 Enso |
+ | STORAGE reads | `[V]` both volumes report on hardware under `UNSAFE` (D42); `ux0:` also works on the safe build via `sceAppMgrGetDevInfo` (D38) |
+ | Behaviour not listed above | unverified |
+ 
+ The SYSTEM panel shows **FW 3.74** because the console's version string is
+ spoofed; the machine is on 3.65 Enso. That is the value the API returns, so it is
+ correct to display. See `AGENTS.md` and `agent-wiki/01-platform.md`.
+ 
+ The host tests (`tools/test/run.sh`) link the real `core/` against a fake port and
+-assert the alert policy at its boundary, the failed-read path, the unit
+-conversions, the history ring, the config model, the launch/working/next-boot
+-split, the staged draft, the single-write commit, the two restore points and the
+-contextual undo, the locked-drop and no-change refusals, the read-only restore
+-refusal, the `*!` halt safeguard, the undo repair, the removed-path pending
+-truth, the failed-save `.undo` preservation, interrupted-swap recovery, the
+-ux0-unreadable rule, the exact `#` edit, the write transaction and its restore
+-path, the shared draft/restore commit protocol, the dock state/action/focus
++assert the alert policy at its boundary, the CPU idle-delta policy and active
++mask, the failed-read path, the unit conversions, the history ring, the config
++model, the launch/working/next-boot split, the staged draft, the single-write
++commit, the two restore points and the contextual undo, the locked-drop and
++no-change refusals, the read-only restore refusal, the `*!` halt safeguard, the
++undo repair, the removed-path pending truth, the failed-save `.undo`
++preservation, interrupted-swap recovery, the ux0-unreadable rule, the exact `#`
++edit, the write transaction and its restore path, the shared draft/restore
++commit protocol, the dock state/action/focus
+ policy, the navigation routing and SAVE/CONFIRM mapping, and the input reducer.
+ The host preview (`tools/preview/run.sh`) renders the shipped composition against
+ the same fake, 38 states with the busiest at 5,429 draw calls. Neither proves
+ anything about the device: every reading in them is synthetic.
+ 
+ ### Hardware handoff
+ 
+-The next action is to flash `build/cockpit-v01.00-b150.vpk` and run this
++The next action is to flash `build/cockpit-v01.00-b153.vpk` and run this
+ checklist on the 3.65 Enso console. The project stays `built` until the user
+ records the evidence; no item below is claimed by the host suite.
+ 
+ 1. Flash the VPK and launch COCKPIT. Confirm the header reads `USING`, the
+    counts, and the prompt; no `ROWS` / `LOADED` / `CROSS CHANGE` text remains.
+    Confirm FRAME is visible on HOME and absent on PLUGINS.
+-2. Confirm CORE shows the three memory pools and the trace, and that no ARM/GPU/
+-   BUS row exists. A failed memory read leaves the trace alone and renders `--`.
++2. Confirm CORE shows four CPU percentages, the active-core average, the
++   context-switch/wakeup rates, the three memory pools, and the CPU-load trace.
++   Confirm no ARM/GPU/BUS row exists. A failed CPU or memory read leaves its
++   trace alone and renders `--`; the CPU rate must not be a static 100 %.
+ 3. Confirm STORAGE shows `ux0:` used/total and `uma0:` as absent or its real
+    size; POWER shows percent, state, temperature, voltage, cycles, and health.
+ 4. Confirm the rows have no dot, the green-dim active titles, the split rockers,
+    the badges, and the selection wash. Confirm OFF is the left red half and ON
+    is the right green half. Confirm the dock actions are pressable slabs: a
+    yellow `CONFIRM & REBOOT`, dark secondary buttons with a bottom ledge, and a
+    white outline on the focused action. Confirm the dock's top and bottom inner
+    padding look even.
+ 5. Stage an enable and a disable. Confirm `config.txt` is unchanged and no
+    `.undo` exists yet; the dock shows `DRAFT - NOT WRITTEN` and the names.
+@@ -301,18 +307,18 @@ Panels degrade, they do not crash.
+   is a warning, not a lock.
+ - The app writes the active `config.txt` and its `config.txt.original` /
+   `config.txt.session` / `config.txt.undo` snapshots. It writes no `.suprx`,
+   `.skprx`, RCO, manifest, status file, or control file. `boot_config.txt` is
+   never opened, read, copied, renamed, or written.
+ 
+ ## 7. Roadmap
+ 
+ | Step | Adds | Needs |
+ |---|---|---|
+-| v1 | the dashboard and the plugin manager | b150 builds and is host-tested; the hardware checklist above is pending |
++| v1 | the dashboard and the plugin manager | b153 builds and is host-tested; the hardware checklist above is pending |
+ | v2 | app inventory, per-title storage | `sceAppMgrGetAppInfo`, directory walk of `ux0:app` |
+ | v3 | network status | `SceNetCtl` in the app process, not in a shell plugin |
+ | v4 | theme switching, a second visual language | a theme abstraction in `gfx/theme` |
+ 
+ Each step adds panels and at most one adapter. None of them change the frame
+ loop or the panel contract. A future clock source would be a new, separate
+ decision with hardware evidence; it is not planned here.
+diff --git a/vita-cockpit/docs/preview-healthy.png b/vita-cockpit/docs/preview-healthy.png
+index 5737bd3..5c5ba21 100644
+Binary files a/vita-cockpit/docs/preview-healthy.png and b/vita-cockpit/docs/preview-healthy.png differ
+diff --git a/vita-cockpit/docs/preview-home-plugins-warning.png b/vita-cockpit/docs/preview-home-plugins-warning.png
+index d0973d3..74c891a 100644
+Binary files a/vita-cockpit/docs/preview-home-plugins-warning.png and b/vita-cockpit/docs/preview-home-plugins-warning.png differ
+diff --git a/vita-cockpit/docs/preview-home-plugins.png b/vita-cockpit/docs/preview-home-plugins.png
+index 70757ba..54968d7 100644
+Binary files a/vita-cockpit/docs/preview-home-plugins.png and b/vita-cockpit/docs/preview-home-plugins.png differ
+diff --git a/vita-cockpit/src/core/history.c b/vita-cockpit/src/core/history.c
+index ceeca3c..6e92cb6 100644
+--- a/vita-cockpit/src/core/history.c
++++ b/vita-cockpit/src/core/history.c
+@@ -25,38 +25,10 @@ float history_at(const History *h, int i)
+ {
+     if (h == NULL || i < 0 || i >= h->len)
+         return 0.0f;
+ 
+     int idx = h->head - 1 - i;
+     while (idx < 0)
+         idx += HISTORY_CAP;
+ 
+     return h->v[idx];
+ }
+-
+-void history_range(const History *h, float *lo, float *hi)
+-{
+-    if (h == NULL || h->len == 0) {
+-        if (lo != NULL)
+-            *lo = 0.0f;
+-        if (hi != NULL)
+-            *hi = 0.0f;
+-        return;
+-    }
+-
+-    float lowest = history_at(h, 0);
+-    float highest = 0.0f;
+-
+-    for (int i = 0; i < h->len; ++i) {
+-        float v = history_at(h, i);
+-
+-        if (v < lowest)
+-            lowest = v;
+-        if (v > highest)
+-            highest = v;
+-    }
+-
+-    if (lo != NULL)
+-        *lo = lowest < highest ? lowest : highest;
+-    if (hi != NULL)
+-        *hi = highest;
+-}
+diff --git a/vita-cockpit/src/core/history.h b/vita-cockpit/src/core/history.h
+index dcbc79a..5f36135 100644
+--- a/vita-cockpit/src/core/history.h
++++ b/vita-cockpit/src/core/history.h
+@@ -15,18 +15,11 @@ typedef struct {
+     int head; /* index of the next write */
+     int len;  /* number of valid samples, <= HISTORY_CAP */
+ } History;
+ 
+ void history_reset(History *h);
+ void history_push(History *h, float value);
+ 
+ /* i == 0 is the newest sample. Out-of-range returns 0. */
+ float history_at(const History *h, int i);
+ 
+-/*
+- * Lowest and highest value currently held, in one pass. The high side is seeded
+- * from zero and the low side from the data, so a flat window reports the sample
+- * itself rather than an empty range. An empty ring reports (0, 0).
+- */
+-void history_range(const History *h, float *lo, float *hi);
+-
+ #endif
+diff --git a/vita-cockpit/src/core/metrics.c b/vita-cockpit/src/core/metrics.c
+index 574e9db..fb2806d 100644
+--- a/vita-cockpit/src/core/metrics.c
++++ b/vita-cockpit/src/core/metrics.c
+@@ -25,34 +25,173 @@ Metrics g_metrics;
+ static float s_ema_ms = FRAME_MS_SEED;
+ 
+ /*
+  * Worst frame since the last slow sample. The FRAME strip's axis is fixed at
+  * two frame periods, and a sample reaching the top is meant to mean "a frame
+  * was dropped" -- which the EMA can never show, because one 33 ms frame moves a
+  * 16.7 ms baseline by under a pixel (review finding #12).
+  */
+ static float s_peak_ms;
+ 
++#define MICROS_PER_SECOND 1000000ull
++
++/* A real console cannot switch threads or leave idle a million times a second.
++ * The cap keeps a bad delta from overflowing the int the panel reads. */
++#define CPU_RATE_MAX 1000000
++
++/* The idle counter and the elapsed clock are read by separate calls. A core
++ * that is fully idle can advance its idle clock a little past the wall reading;
++ * allow 2 % (at least 2 ms) before declaring the sample unusable. A wrong unit
++ * is orders of magnitude larger and still fails closed. */
++#define CPU_IDLE_SLACK_MIN_US 2000ull
++#define CPU_IDLE_SLACK_DIV 50ull
++
++/*
++ * Previous CPU counters. The idle clocks are cumulative, so one window must
++ * establish the baseline before a percentage can exist. This is policy state,
++ * not platform state: the adapter returns raw counters only.
++ */
++static PlatformCpu s_prev_cpu;
++static int s_have_prev_cpu;
++
+ static void sample_memory(void)
+ {
+     PlatformMemory in;
+     platform_read_memory(&in);
+ 
+     g_metrics.mem_valid = in.ok;
+     if (!in.ok)
+         return;
+ 
+     g_metrics.mem_user_mb = (int)(in.user_bytes / BYTES_PER_MB);
+     g_metrics.mem_cdram_mb = (int)(in.cdram_bytes / BYTES_PER_MB);
+     g_metrics.mem_phy_mb = (int)(in.phycont_bytes / BYTES_PER_MB);
+ }
+ 
++/* Percent of one core that was *not* idle, from its idle-clock delta. */
++static int cpu_pct_from_idle(uint64_t idle, uint64_t elapsed)
++{
++    if (elapsed == 0)
++        return CPU_CORE_UNKNOWN;
++
++    /*
++     * The idle clock cannot have advanced further than wall time. If it did,
++     * the unit is not microseconds; refusing the sample is the only honest
++     * answer (see the [C] note in platform_psp2.c). The small slack covers the
++     * two separate clock reads, not a different unit.
++     */
++    if (idle > elapsed) {
++        uint64_t slack = elapsed / CPU_IDLE_SLACK_DIV;
++
++        if (slack < CPU_IDLE_SLACK_MIN_US)
++            slack = CPU_IDLE_SLACK_MIN_US;
++        if (idle > elapsed + slack)
++            return CPU_CORE_UNKNOWN;
++
++        idle = elapsed;
++    }
++
++    double busy = 100.0 - ((double)idle * 100.0 / (double)elapsed);
++    int pct = (int)(busy + 0.5);
++
++    if (pct < 0)
++        pct = 0;
++    if (pct > 100)
++        pct = 100;
++
++    return pct;
++}
++
++static int cpu_rate(uint64_t delta, uint64_t elapsed)
++{
++    uint64_t rate = (delta * MICROS_PER_SECOND + elapsed / 2) / elapsed;
++
++    if (rate > CPU_RATE_MAX)
++        rate = CPU_RATE_MAX;
++
++    return (int)rate;
++}
++
++static void sample_cpu(void)
++{
++    PlatformCpu in;
++    platform_read_cpu(&in);
++
++    g_metrics.cpu_valid = 0;
++    g_metrics.cpu_usage_pct = 0;
++    g_metrics.cpu_active_mask = 0;
++    g_metrics.cpu_ctx_per_s = 0;
++    g_metrics.cpu_wake_per_s = 0;
++
++    for (int i = 0; i < CPU_CORE_COUNT; ++i)
++        g_metrics.cpu_core_pct[i] = CPU_CORE_UNKNOWN;
++
++    if (!in.ok) {
++        s_have_prev_cpu = 0;
++        return;
++    }
++
++    if (!s_have_prev_cpu || in.time_us <= s_prev_cpu.time_us) {
++        s_prev_cpu = in;
++        s_have_prev_cpu = 1;
++        return;
++    }
++
++    uint64_t elapsed = in.time_us - s_prev_cpu.time_us;
++    unsigned mask = in.active_mask & s_prev_cpu.active_mask;
++    uint64_t idle_sum = 0;
++    int cores = 0;
++
++    for (int i = 0; i < CPU_CORE_COUNT; ++i) {
++        if ((mask & (1u << i)) == 0)
++            continue;
++        if (in.idle_us[i] < s_prev_cpu.idle_us[i])
++            continue;
++
++        uint64_t idle = in.idle_us[i] - s_prev_cpu.idle_us[i];
++        int pct = cpu_pct_from_idle(idle, elapsed);
++
++        if (pct == CPU_CORE_UNKNOWN)
++            continue;
++
++        g_metrics.cpu_core_pct[i] = pct;
++        idle_sum += idle;
++        ++cores;
++    }
++
++    if (cores > 0) {
++        double busy = 100.0 -
++                      ((double)idle_sum * 100.0 /
++                       ((double)elapsed * (double)cores));
++        int pct = (int)(busy + 0.5);
++
++        if (pct < 0)
++            pct = 0;
++        if (pct > 100)
++            pct = 100;
++
++        g_metrics.cpu_usage_pct = pct;
++        g_metrics.cpu_valid = 1;
++        g_metrics.cpu_active_mask = mask;
++        history_push(&g_metrics.hist_cpu, (float)pct);
++    }
++
++    if (in.ctx_switches >= s_prev_cpu.ctx_switches)
++        g_metrics.cpu_ctx_per_s =
++            cpu_rate(in.ctx_switches - s_prev_cpu.ctx_switches, elapsed);
++    if (in.wakeups >= s_prev_cpu.wakeups)
++        g_metrics.cpu_wake_per_s =
++            cpu_rate(in.wakeups - s_prev_cpu.wakeups, elapsed);
++
++    s_prev_cpu = in;
++}
++
+ static void sample_storage(int i)
+ {
+     PlatformStorage in;
+     platform_read_storage(i, &in);
+ 
+     g_metrics.storage[i].error = in.error;
+     g_metrics.storage[i].errno_byte = in.errno_byte;
+     g_metrics.storage[i].valid = in.ok;
+     if (!in.ok)
+         return;
+@@ -137,83 +276,58 @@ static void update_alert(void)
+     if (g_metrics.power_valid && g_metrics.batt_pct < LOW_BATTERY_PCT &&
+         !g_metrics.charging)
+         a = 1;
+ 
+     if (!g_metrics.storage[PLATFORM_STORAGE_UX0].valid)
+         a = 1;
+ 
+     g_metrics.alert = a;
+ }
+ 
+-/* Axis range for the CORE trace, padded so a flat line sits mid-box. */
+-static void update_mem_axis(void)
+-{
+-    float lo;
+-    float hi;
+-
+-    history_range(&g_metrics.hist_mem, &lo, &hi);
+-
+-    if (hi - lo < HIST_MEM_MIN_SPAN) {
+-        float mid = (lo + hi) * 0.5f;
+-        lo = mid - HIST_MEM_MIN_SPAN * 0.5f;
+-        hi = mid + HIST_MEM_MIN_SPAN * 0.5f;
+-    }
+-
+-    g_metrics.hist_mem_lo = lo;
+-    g_metrics.hist_mem_hi = hi;
+-}
+-
+ void metrics_init(void)
+ {
+     memset(&g_metrics, 0, sizeof(g_metrics));
+-    history_reset(&g_metrics.hist_mem);
++    history_reset(&g_metrics.hist_cpu);
+     history_reset(&g_metrics.hist_frame);
+ 
+     s_ema_ms = FRAME_MS_SEED;
+     s_peak_ms = 0.0f;
++    s_have_prev_cpu = 0;
+     g_metrics.frame_ms = s_ema_ms;
+     g_metrics.fps = 1000.0f / s_ema_ms;
+ 
+     metrics_sample_slow();
+ }
+ 
+ void metrics_sample_slow(void)
+ {
+     sample_memory();
+ 
+     for (int i = 0; i < STORAGE_COUNT; ++i)
+         sample_storage(i);
+ 
+     sample_power();
+     sample_identity();
+     sample_clock();
++    sample_cpu();
+ 
+     g_metrics.uptime_s = platform_uptime_seconds();
+ 
+-    /*
+-     * Only a real reading enters the trace. Pushing on a failed sample would
+-     * draw the previous value as if the console still reported it, which is
+-     * exactly what PROJECT.md section 6 forbids.
+-     */
+-    if (g_metrics.mem_valid)
+-        history_push(&g_metrics.hist_mem, (float)g_metrics.mem_user_mb);
+-
+     /*
+      * A slow sample can run before any frame, or after a catch-up burst that
+      * already consumed the peak. Only a real frame sample belongs in the
+      * trace; a zero would draw a false dropped-frame dip.
+      */
+     if (s_peak_ms > 0.0f)
+         history_push(&g_metrics.hist_frame, s_peak_ms);
+     s_peak_ms = 0.0f;
+ 
+-    update_mem_axis();
+     update_alert();
+ }
+ 
+ void metrics_sample_frame(float dt)
+ {
+     float ms = dt * 1000.0f;
+     if (ms < 0.0f)
+         ms = 0.0f;
+ 
+     s_ema_ms += (ms - s_ema_ms) * FRAME_EMA_ALPHA;
+diff --git a/vita-cockpit/src/core/metrics.h b/vita-cockpit/src/core/metrics.h
+index b7a6476..ccdce90 100644
+--- a/vita-cockpit/src/core/metrics.h
++++ b/vita-cockpit/src/core/metrics.h
+@@ -3,23 +3,24 @@
+ 
+ #include "core/history.h"
+ #include "core/platform.h"
+ 
+ #define STORAGE_COUNT PLATFORM_STORAGE_COUNT
+ #define FW_STRING_MAX PLATFORM_FW_MAX
+ 
+ /* Alert threshold, percent, discharging only. */
+ #define LOW_BATTERY_PCT 20
+ 
+-/* Smallest axis span the CORE trace will draw. Below this the line is flat and
+- * the box would either pin it to an edge or divide by zero. */
+-#define HIST_MEM_MIN_SPAN 4.0f
++#define CPU_CORE_COUNT PLATFORM_CPU_COUNT
++
++/* A core that is not active has no percentage to report. */
++#define CPU_CORE_UNKNOWN (-1)
+ 
+ /*
+  * Storage in whole megabytes.
+  *
+  * MB rather than tenths of a GB so a small volume keeps its precision: a 512 MB
+  * card is "512 MB", not "0.5 GB". The panel picks the unit from the magnitude.
+  */
+ typedef struct {
+     int used_mb;
+     int total_mb;
+@@ -36,20 +37,33 @@ typedef struct {
+  *
+  * Every field has a matching `*_valid` flag. A panel must render "--" when the
+  * flag is clear rather than printing the zero it happens to hold.
+  */
+ typedef struct {
+     int mem_user_mb;
+     int mem_cdram_mb;
+     int mem_phy_mb;
+     int mem_valid;
+ 
++    /*
++     * CPU load is system-wide: it comes from the scheduler's per-core idle
++     * clocks, not from this process. `cpu_core_pct` is CPU_CORE_UNKNOWN for a
++     * core outside the active mask. `cpu_valid` means at least one core had a
++     * usable idle delta.
++     */
++    int cpu_valid;
++    int cpu_usage_pct; /* active-core average */
++    int cpu_core_pct[CPU_CORE_COUNT];
++    unsigned cpu_active_mask;
++    int cpu_ctx_per_s;
++    int cpu_wake_per_s;
++
+     StorageSample storage[STORAGE_COUNT]; /* 0 ux0, 1 uma0 */
+ 
+     int batt_pct;
+     int batt_temp_c;
+     int batt_mv;
+     int batt_cycles;
+     int batt_health;
+     int charging;
+     int power_valid;
+     int batt_temp_valid;
+@@ -63,30 +77,23 @@ typedef struct {
+ 
+     double uptime_s;
+     float fps;
+     float frame_ms;
+ 
+     int clock_h;
+     int clock_m;
+     int clock_s;
+     int clock_valid;
+ 
+-    History hist_mem;   /* free user memory, MB */
++    History hist_cpu;   /* aggregate CPU load, percent */
+     History hist_frame; /* frame time, ms */
+ 
+-    /*
+-     * The CORE trace's axis, computed once per slow sample rather than per
+-     * frame (D21 prices it at 10 Hz; the draw loop runs at 60).
+-     */
+-    float hist_mem_lo;
+-    float hist_mem_hi;
+-
+     /* Drives the hazard band. Never true on a healthy console. */
+     int alert;
+ } Metrics;
+ 
+ extern Metrics g_metrics;
+ 
+ void metrics_init(void);
+ 
+ /* ~10 Hz. Memory, storage, power, identity, wall clock. */
+ void metrics_sample_slow(void);
+diff --git a/vita-cockpit/src/core/platform.h b/vita-cockpit/src/core/platform.h
+index 5313476..a3a7f3e 100644
+--- a/vita-cockpit/src/core/platform.h
++++ b/vita-cockpit/src/core/platform.h
+@@ -67,20 +67,42 @@ typedef struct {
+     int ok;
+ } PlatformStorage;
+ 
+ typedef struct {
+     uint64_t user_bytes;
+     uint64_t cdram_bytes;
+     uint64_t phycont_bytes;
+     int ok;
+ } PlatformMemory;
+ 
++#define PLATFORM_CPU_COUNT 4
++
++/*
++ * Per-core scheduler counters, straight from sceKernelGetSystemInfo().
++ *
++ * `idle_us` is treated as microseconds, the same unit as `time_us`; that is
++ * the one [C] claim here. The sampling policy refuses a sample where an idle
++ * delta exceeds the elapsed time, so a unit mismatch renders "--" instead of a
++ * fabricated percentage.
++ *
++ * `ctx_switches` and `wakeups` are cumulative counts across the active cores.
++ * The policy turns the deltas into per-second rates.
++ */
++typedef struct {
++    uint64_t idle_us[PLATFORM_CPU_COUNT];
++    uint64_t time_us;
++    uint64_t ctx_switches;
++    uint64_t wakeups;
++    unsigned active_mask;
++    int ok;
++} PlatformCpu;
++
+ typedef struct {
+     int percent;
+     int temp_c;
+     int millivolts;
+     int cycles;
+     int health;   /* state of health, percent */
+     int charging;
+     int temp_ok;
+     int volt_ok;
+     int cycles_ok;
+@@ -96,20 +118,21 @@ typedef struct {
+ 
+ typedef struct {
+     int hour;
+     int minute;
+     int second;
+     int ok;
+ } PlatformClock;
+ 
+ void platform_read_storage(int index, PlatformStorage *out);
+ void platform_read_memory(PlatformMemory *out);
++void platform_read_cpu(PlatformCpu *out);
+ void platform_read_power(PlatformPower *out);
+ void platform_read_identity(PlatformIdentity *out);
+ void platform_read_clock(PlatformClock *out);
+ 
+ /*
+  * Text file access, for the plugin config.
+  *
+  * Reading a file is a device detail, so it crosses the port like any other
+  * reading. `platform_file_exists` answers without reading, which is what "is
+  * this plugin actually loaded" needs.
+diff --git a/vita-cockpit/src/panels/core.c b/vita-cockpit/src/panels/core.c
+index 835a3d1..a26a1da 100644
+--- a/vita-cockpit/src/panels/core.c
++++ b/vita-cockpit/src/panels/core.c
+@@ -1,83 +1,129 @@
+ #include "panels/panel.h"
+ 
+ #include <stdio.h>
+ 
+ #include "core/metrics.h"
+ #include "gfx/font.h"
+ 
+ /*
+- * CORE — the hero. It reports the memory pools the machine has left and the
+- * shape of the free-user pool over time.
++ * CORE — the hero. It reports what the machine is doing and how much memory is
++ * left.
+  *
+- * The applied-clock rows were removed with the app-local bridge in D99. Without
+- * a kernel or bridge source, the userland request is not the applied value, and
+- * this project does not print a number it cannot stand behind.
++ * CPU load is system-wide, sampled from the scheduler's per-core idle clocks
++ * through sceKernelGetSystemInfo() in the platform adapter. It is not this
++ * process's share. The four cores are shown individually and averaged into the
++ * trace, so a single busy core cannot hide behind an idle machine.
++ *
++ * The applied ARM/GPU/BUS clocks are still unavailable without a kernel or
++ * bridge source; the userland ScePower getters return this process's request,
++ * not the machine's value. They are deliberately not printed. GPU work shows up
++ * as the CDRAM/PHY pools here and as frame time in the pinned FRAME strip.
+  */
+ 
+-#define CORE_COL_W 120.0f
+-#define CORE_COL_GAP 62.0f
++#define CORE_CPU_COL_W 106.0f
++#define CORE_CPU_COL_GAP 20.0f
++
++#define CORE_MEM_COL_W 120.0f
++#define CORE_MEM_COL_GAP 62.0f
+ 
+-#define CORE_MEM_Y PANEL_BODY_Y
++#define CORE_CPU_Y PANEL_BODY_Y
++#define CORE_MEM_Y (CORE_CPU_Y + READOUT_STRIDE)
+ #define CORE_CAPTION_Y (CORE_MEM_Y + LINE_H(PX_VALUE) + SP_4)
+ #define CORE_TRACE_Y (CORE_CAPTION_Y + LINE_H(PX_MICRO) + SP_2)
+-#define CORE_TRACE_H 68.0f
++#define CORE_TRACE_H 52.0f
+ 
+ #define NUM_BUF 24
+ 
+-static float col_x(Rect r, int i)
++static float cpu_col_x(Rect r, int i)
++{
++    return r.x + PANEL_INSET +
++           (float)i * (CORE_CPU_COL_W + CORE_CPU_COL_GAP);
++}
++
++static float mem_col_x(Rect r, int i)
+ {
+-    return r.x + PANEL_INSET + (float)i * (CORE_COL_W + CORE_COL_GAP);
++    return r.x + PANEL_INSET +
++           (float)i * (CORE_MEM_COL_W + CORE_MEM_COL_GAP);
+ }
+ 
+-static void draw_triplet(Rect r, float row_y, const char *const labels[3],
+-                         const int values[3], int valid)
++static void draw_cpu_row(Rect r)
+ {
++    static const char *const LABELS[CPU_CORE_COUNT] = {"C0", "C1", "C2", "C3"};
++    char value[NUM_BUF];
++
++    for (int i = 0; i < CPU_CORE_COUNT; ++i) {
++        int pct = g_metrics.cpu_core_pct[i];
++        int valid = pct != CPU_CORE_UNKNOWN;
++
++        if (valid)
++            snprintf(value, sizeof(value), "%d%%", pct);
++        else
++            snprintf(value, sizeof(value), "%s", THEME_ABSENT);
++
++        theme_readout_px(LABELS[i], value, valid, cpu_col_x(r, i),
++                         r.y + CORE_CPU_Y, CORE_CPU_COL_W, PX_LABEL,
++                         PX_VALUE);
++    }
++}
++
++static void draw_memory_row(Rect r)
++{
++    static const char *const LABELS[3] = {"USER", "CDRAM", "PHY"};
++    int mb[3] = {g_metrics.mem_user_mb, g_metrics.mem_cdram_mb,
++                 g_metrics.mem_phy_mb};
++
+     for (int i = 0; i < 3; ++i)
+-        theme_readout_int(labels[i], values[i], valid, col_x(r, i),
+-                          r.y + row_y, CORE_COL_W);
++        theme_readout_int(LABELS[i], mb[i], g_metrics.mem_valid,
++                          mem_col_x(r, i), r.y + CORE_MEM_Y,
++                          CORE_MEM_COL_W);
++}
++
++static void draw_caption(Rect r)
++{
++    float x = r.x + PANEL_INSET;
++    float w = r.w - 2.0f * PANEL_INSET;
++    char left[NUM_BUF];
++    char right[48];
++
++    if (g_metrics.cpu_valid) {
++        snprintf(left, sizeof(left), "CPU LOAD AVG %d%%",
++                 g_metrics.cpu_usage_pct);
++        snprintf(right, sizeof(right), "CTX %d/S  WAKE %d/S",
++                 g_metrics.cpu_ctx_per_s, g_metrics.cpu_wake_per_s);
++    } else {
++        snprintf(left, sizeof(left), "CPU LOAD AVG %s", THEME_ABSENT);
++        snprintf(right, sizeof(right), "CTX %s  WAKE %s", THEME_ABSENT,
++                 THEME_ABSENT);
++    }
++
++    font_text(left, x, r.y + CORE_CAPTION_Y, PX_MICRO, C_DIM);
++    font_text_right(right, x + w, r.y + CORE_CAPTION_Y, PX_MICRO, C_DIM);
+ }
+ 
+ static void draw_trace(Rect r)
+ {
+     float x = r.x + PANEL_INSET;
+     float w = r.w - 2.0f * PANEL_INSET;
+ 
+     /*
+-     * The trace is scaled to the window's own range, not to zero. A free-memory
+-     * trace sits at ~95 % of capacity all day, so a zero-based axis would pin
+-     * the line to the top edge and show nothing. The axis is printed at the
+-     * right, so the autoscale is declared rather than implied.
++     * A fixed 0-100 % axis, unlike the old free-memory trace. A CPU load line
++     * that autoscaled would make 5 % look as busy as 95 %.
+      */
+-    font_text("FREE USER MEM MB", x, r.y + CORE_CAPTION_Y, PX_MICRO, C_DIM);
+-
+-    /* No reading, or no samples, means no trace. Drawing an axis anyway would
+-     * put a fabricated range under a label that says memory. */
+-    if (!g_metrics.mem_valid || g_metrics.hist_mem.len <= 0)
++    if (!g_metrics.cpu_valid || g_metrics.hist_cpu.len <= 0)
+         return;
+ 
+-    /* Axis cached by the sampler at 10 Hz, so the 60 Hz loop does not rescan
+-     * 200 samples twice per frame (D21, D27). */
+-    float lo = g_metrics.hist_mem_lo;
+-    float hi = g_metrics.hist_mem_hi;
+-
+-    char range_buf[NUM_BUF];
+-    snprintf(range_buf, sizeof(range_buf), "%d-%d", (int)lo, (int)hi);
+-    font_text_right(range_buf, x + w, r.y + CORE_CAPTION_Y, PX_MICRO, C_DIM);
+-
+-    theme_sparkline(&g_metrics.hist_mem, x, r.y + CORE_TRACE_Y, w,
+-                    CORE_TRACE_H, C_YELLOW, lo, hi);
++    theme_sparkline(&g_metrics.hist_cpu, x, r.y + CORE_TRACE_Y, w,
++                    CORE_TRACE_H, C_YELLOW, 0.0f, 100.0f);
+ }
+ 
+ static void draw_core(const Panel *self, Rect r)
+ {
+-    static const char *const MEM_LABELS[3] = {"USER", "CDRAM", "PHY"};
+-    int mb[3] = {g_metrics.mem_user_mb, g_metrics.mem_cdram_mb,
+-                 g_metrics.mem_phy_mb};
+-
+     (void)self;
+ 
+-    draw_triplet(r, CORE_MEM_Y, MEM_LABELS, mb, g_metrics.mem_valid);
++    draw_cpu_row(r);
++    draw_memory_row(r);
++    draw_caption(r);
+     draw_trace(r);
+ }
+ 
+ const Panel panel_core = {"CORE", C_YELLOW, draw_core};
+diff --git a/vita-cockpit/src/platform/platform_psp2.c b/vita-cockpit/src/platform/platform_psp2.c
+index 5123139..0136dd2 100644
+--- a/vita-cockpit/src/platform/platform_psp2.c
++++ b/vita-cockpit/src/platform/platform_psp2.c
+@@ -3,20 +3,21 @@
+ #include <string.h>
+ 
+ #include <psp2/appmgr.h>
+ #include <psp2/io/devctl.h>
+ #include <psp2/io/dirent.h>
+ #include <psp2/io/fcntl.h>
+ #include <psp2/io/stat.h>
+ #include <psp2/kernel/modulemgr.h>
+ #include <psp2/kernel/processmgr.h>
+ #include <psp2/kernel/sysmem.h>
++#include <psp2/kernel/threadmgr.h>
+ #include <psp2/power.h>
+ #include <psp2/rtc.h>
+ #include <stdio.h>
+ 
+ /*
+  * The PSP2 SDK adapter. This is the only file in COCKPIT that may include
+  * psp2 headers alongside the sampling policy's port (D7, D8).
+  *
+  * Every [C] platform claim in the project lives here, so that correcting one
+  * after a hardware session is a one-file change that cannot reach into
+@@ -140,20 +141,79 @@ void platform_read_memory(PlatformMemory *out)
+     /* The struct's fields are signed ints; a negative is a bad read. */
+     if (info.size_user < 0 || info.size_cdram < 0 || info.size_phycont < 0)
+         return;
+ 
+     out->user_bytes = (uint64_t)(unsigned)info.size_user;
+     out->cdram_bytes = (uint64_t)(unsigned)info.size_cdram;
+     out->phycont_bytes = (uint64_t)(unsigned)info.size_phycont;
+     out->ok = 1;
+ }
+ 
++void platform_read_cpu(PlatformCpu *out)
++{
++    if (out == NULL)
++        return;
++
++    memset(out, 0, sizeof(*out));
++
++    /*
++     * [V] psp2/kernel/threadmgr/thread.h: the userland SceLibKernel export
++     * populates per-CPU idle clocks, wakeup counts, and thread-switch counts.
++     * `size` must be set first.
++     *
++     * [C] `idleClock` is assumed to be microseconds. This is the unit PSVshell
++     * divides by its microsecond process tick; the header does not state it.
++     * core/metrics.c rejects a sample whose idle delta exceeds the elapsed
++     * time, so a wrong unit becomes "--", never a percentage.
++     */
++    SceKernelSystemInfo info;
++    memset(&info, 0, sizeof(info));
++    info.size = sizeof(info);
++
++    if (sceKernelGetSystemInfo(&info) < 0)
++        return;
++    if (info.activeCpuMask == 0)
++        return;
++
++    uint64_t time_us = sceKernelGetProcessTimeWide();
++    if (time_us == 0)
++        return;
++
++    int have_idle = 0;
++
++    out->time_us = time_us;
++    out->active_mask = info.activeCpuMask;
++
++    for (int i = 0; i < PLATFORM_CPU_COUNT; ++i) {
++        out->idle_us[i] = info.cpuInfo[i].idleClock;
++
++        if ((info.activeCpuMask & (1u << i)) == 0)
++            continue;
++
++        out->ctx_switches += info.cpuInfo[i].threadSwitchCount;
++        out->wakeups += info.cpuInfo[i].comesOutOfIdleCount;
++
++        if (out->idle_us[i] > 0)
++            have_idle = 1;
++    }
++
++    /*
++     * A zero idle clock on every active core is not a real 100 % load; it is a
++     * counter that has not started yet. Refuse the sample and let the next
++     * 100 ms window establish the baseline.
++     */
++    if (!have_idle)
++        return;
++
++    out->ok = 1;
++}
++
+ void platform_read_power(PlatformPower *out)
+ {
+     if (out == NULL)
+         return;
+ 
+     memset(out, 0, sizeof(*out));
+ 
+     /* [V] psp2/power.h: percent is the only reading with a documented failure
+      * value. The rest are accepted as reported once percent is sane. */
+     int pct = scePowerGetBatteryLifePercent();
+diff --git a/vita-cockpit/tools/fake/fake_platform.c b/vita-cockpit/tools/fake/fake_platform.c
+index 5cb3193..59c0962 100644
+--- a/vita-cockpit/tools/fake/fake_platform.c
++++ b/vita-cockpit/tools/fake/fake_platform.c
+@@ -28,20 +28,50 @@ static int s_power_cycles_ok;
+ static int s_power_health_ok;
+ 
+ static int s_storage_ok[PLATFORM_STORAGE_COUNT];
+ static uint64_t s_storage_total[PLATFORM_STORAGE_COUNT];
+ static uint64_t s_storage_free[PLATFORM_STORAGE_COUNT];
+ static int s_storage_error[PLATFORM_STORAGE_COUNT];
+ 
+ static int s_identity_ok;
+ static int s_clock_ok;
+ 
++#define FAKE_CPU_STEP_US 100000ull
++
++static int s_cpu_ok;
++static unsigned s_cpu_active_mask;
++static int s_cpu_usage[PLATFORM_CPU_COUNT];
++static int s_cpu_ctx_per_s;
++static int s_cpu_wake_per_s;
++static int s_cpu_broken;
++static uint64_t s_cpu_time_us;
++static uint64_t s_cpu_idle_us[PLATFORM_CPU_COUNT];
++static uint64_t s_cpu_ctx_total;
++static uint64_t s_cpu_wake_total;
++
++static void cpu_reset(void)
++{
++    s_cpu_ok = 1;
++    s_cpu_active_mask = 0xFu;
++    s_cpu_usage[0] = 18;
++    s_cpu_usage[1] = 22;
++    s_cpu_usage[2] = 9;
++    s_cpu_usage[3] = 4;
++    s_cpu_ctx_per_s = 840;
++    s_cpu_wake_per_s = 230;
++    s_cpu_broken = 0;
++    s_cpu_time_us = 0;
++    memset(s_cpu_idle_us, 0, sizeof(s_cpu_idle_us));
++    s_cpu_ctx_total = 0;
++    s_cpu_wake_total = 0;
++}
++
+ static void files_reset(void);
+ 
+ void fake_reset(void)
+ {
+     files_reset();
+ 
+     s_mem_ok = 1;
+     s_mem_mb = 182;
+ 
+     s_power_ok = 1;
+@@ -59,33 +89,70 @@ void fake_reset(void)
+ 
+     s_storage_ok[PLATFORM_STORAGE_UX0] = 1;
+     s_storage_total[PLATFORM_STORAGE_UX0] = 29ull * GB + GB / 2;
+     s_storage_free[PLATFORM_STORAGE_UX0] =
+         s_storage_total[PLATFORM_STORAGE_UX0] - (12ull * GB + 4 * GB / 10);
+ 
+     /* uma0: absent, as it is on a console with no second volume. */
+ 
+     s_identity_ok = 1;
+     s_clock_ok = 1;
++
++    cpu_reset();
+ }
+ 
+ void fake_set_memory_mb(int user_mb)
+ {
+     s_mem_ok = 1;
+     s_mem_mb = user_mb;
+ }
+ 
+ void fake_set_memory_absent(void)
+ {
+     s_mem_ok = 0;
+ }
+ 
++void fake_set_cpu_absent(void)
++{
++    s_cpu_ok = 0;
++}
++
++void fake_set_cpu_usage(int core, int percent)
++{
++    if (core < 0 || core >= PLATFORM_CPU_COUNT)
++        return;
++
++    if (percent < 0)
++        percent = 0;
++    if (percent > 100)
++        percent = 100;
++
++    s_cpu_usage[core] = percent;
++}
++
++void fake_set_cpu_mask(unsigned mask)
++{
++    s_cpu_active_mask = mask & 0xFu;
++}
++
++void fake_set_cpu_activity(int ctx_per_s, int wake_per_s)
++{
++    s_cpu_ctx_per_s = ctx_per_s > 0 ? ctx_per_s : 0;
++    s_cpu_wake_per_s = wake_per_s > 0 ? wake_per_s : 0;
++}
++
++/* Emit idle deltas larger than elapsed time, as a wrong clock unit would. */
++void fake_set_cpu_broken(int on)
++{
++    s_cpu_broken = on ? 1 : 0;
++}
++
+ void fake_set_power(int percent, int charging)
+ {
+     s_power_ok = 1;
+     s_power_pct = percent;
+     s_power_charging = charging;
+ }
+ 
+ void fake_set_power_absent(void)
+ {
+     s_power_ok = 0;
+@@ -166,20 +233,62 @@ void platform_read_memory(PlatformMemory *out)
+ 
+     if (!s_mem_ok)
+         return;
+ 
+     out->user_bytes = (uint64_t)s_mem_mb * MB;
+     out->cdram_bytes = 41ull * MB;
+     out->phycont_bytes = 64ull * MB;
+     out->ok = 1;
+ }
+ 
++void platform_read_cpu(PlatformCpu *out)
++{
++    if (out == NULL)
++        return;
++
++    memset(out, 0, sizeof(*out));
++
++    if (!s_cpu_ok || s_cpu_active_mask == 0)
++        return;
++
++    /*
++     * Advance the fake's 10 Hz window. Every active core contributes idle time
++     * according to its configured load; the cumulative counters advance from
++     * the configured rates. This mirrors the raw counters the real adapter
++     * returns, so the policy is what turns them into percentages.
++     */
++    s_cpu_time_us += FAKE_CPU_STEP_US;
++    out->time_us = s_cpu_time_us;
++    out->active_mask = s_cpu_active_mask;
++
++    for (int i = 0; i < PLATFORM_CPU_COUNT; ++i) {
++        if ((s_cpu_active_mask & (1u << i)) == 0)
++            continue;
++
++        uint64_t idle = s_cpu_broken
++                            ? FAKE_CPU_STEP_US * 2ull
++                            : (uint64_t)(100 - s_cpu_usage[i]) *
++                                  FAKE_CPU_STEP_US / 100ull;
++        s_cpu_idle_us[i] += idle;
++        out->idle_us[i] = s_cpu_idle_us[i];
++    }
++
++    s_cpu_ctx_total += (uint64_t)s_cpu_ctx_per_s * FAKE_CPU_STEP_US /
++                       1000000ull;
++    s_cpu_wake_total += (uint64_t)s_cpu_wake_per_s * FAKE_CPU_STEP_US /
++                        1000000ull;
++
++    out->ctx_switches = s_cpu_ctx_total;
++    out->wakeups = s_cpu_wake_total;
++    out->ok = 1;
++}
++
+ void platform_read_power(PlatformPower *out)
+ {
+     if (out == NULL)
+         return;
+ 
+     memset(out, 0, sizeof(*out));
+ 
+     if (!s_power_ok)
+         return;
+ 
+diff --git a/vita-cockpit/tools/fake/fake_platform.h b/vita-cockpit/tools/fake/fake_platform.h
+index 09da5ac..e85ee22 100644
+--- a/vita-cockpit/tools/fake/fake_platform.h
++++ b/vita-cockpit/tools/fake/fake_platform.h
+@@ -12,20 +12,26 @@
+  * of writing g_metrics by hand -- which is what made the old preview prove
+  * nothing about validity propagation (D26).
+  */
+ 
+ /* Healthy console: ux0 present, uma0 absent, 182 MB free user. */
+ void fake_reset(void);
+ 
+ void fake_set_memory_mb(int user_mb);
+ void fake_set_memory_absent(void);
+ 
++void fake_set_cpu_absent(void);
++void fake_set_cpu_usage(int core, int percent);
++void fake_set_cpu_mask(unsigned mask);
++void fake_set_cpu_activity(int ctx_per_s, int wake_per_s);
++void fake_set_cpu_broken(int on);
++
+ void fake_set_power(int percent, int charging);
+ void fake_set_power_absent(void);
+ void fake_set_power_partial(int temp_ok, int volt_ok, int cycles_ok,
+                             int health_ok);
+ 
+ void fake_set_storage(int index, uint64_t total_bytes, uint64_t free_bytes);
+ void fake_set_storage_absent(int index);
+ void fake_set_storage_error(int index, int error);
+ 
+ void fake_set_identity_absent(void);
+diff --git a/vita-cockpit/tools/preview/preview.c b/vita-cockpit/tools/preview/preview.c
+index b1c8d21..d61e784 100644
+--- a/vita-cockpit/tools/preview/preview.c
++++ b/vita-cockpit/tools/preview/preview.c
+@@ -50,20 +50,24 @@ static void seed_trace(void)
+ {
+     for (int i = 0; i < HISTORY_CAP; ++i) {
+         float ph = (float)i * 0.06f;
+         int mem = 182 + (int)(9.0f * sinf(ph) + 3.0f * sinf(ph * 2.7f));
+         float ms = 16.6f + 1.6f * sinf(ph * 1.9f);
+ 
+         if (i % 47 == 0)
+             ms += 9.0f;
+ 
+         fake_set_memory_mb(mem);
++        fake_set_cpu_usage(0, 18 + (int)(8.0f * sinf(ph)));
++        fake_set_cpu_usage(1, 22 + (int)(10.0f * sinf(ph * 1.3f + 1.0f)));
++        fake_set_cpu_usage(2, 9 + (int)(5.0f * sinf(ph * 0.7f)));
++        fake_set_cpu_usage(3, 4 + (int)(3.0f * sinf(ph * 1.7f)));
+         metrics_sample_frame(ms / 1000.0f);
+         metrics_sample_slow();
+     }
+ }
+ 
+ static void be32(uint8_t *p, uint32_t v)
+ {
+     p[0] = (uint8_t)(v >> 24);
+     p[1] = (uint8_t)(v >> 16);
+     p[2] = (uint8_t)(v >> 8);
+diff --git a/vita-cockpit/tools/test/test_metrics.c b/vita-cockpit/tools/test/test_metrics.c
+index 4da87e8..b077f27 100644
+--- a/vita-cockpit/tools/test/test_metrics.c
++++ b/vita-cockpit/tools/test/test_metrics.c
+@@ -61,40 +61,97 @@ static void test_alert_policy(void)
+     metrics_init();
+     CHECK(g_metrics.alert == 1);
+ 
+     /* A failed power read is its own fault, not a silent all-clear (D23). */
+     fake_reset();
+     fake_set_power_absent();
+     metrics_init();
+     CHECK(g_metrics.alert == 1);
+ }
+ 
+-/* A failed read must not enter the trace (review finding #2). */
+-static void test_failed_memory_leaves_trace_alone(void)
++/*
++ * The CPU trace is system-wide, not this process's share. The fake emits raw
++ * idle-clock deltas; the policy must turn them into stable per-core numbers.
++ */
++static void test_cpu_usage(void)
+ {
+     fake_reset();
++    metrics_init(); /* first sample establishes the baseline */
++    metrics_sample_slow();
++
++    CHECK(g_metrics.cpu_valid == 1);
++    CHECK(g_metrics.cpu_usage_pct == 13); /* (18+22+9+4)/4, rounded down */
++    CHECK(g_metrics.cpu_core_pct[0] == 18);
++    CHECK(g_metrics.cpu_core_pct[1] == 22);
++    CHECK(g_metrics.cpu_core_pct[2] == 9);
++    CHECK(g_metrics.cpu_core_pct[3] == 4);
++    CHECK(g_metrics.cpu_ctx_per_s == 840);
++    CHECK(g_metrics.cpu_wake_per_s == 230);
++    CHECK(g_metrics.hist_cpu.len == 1);
++    CHECK(history_at(&g_metrics.hist_cpu, 0) == 13.0f);
++}
++
++/* An inactive core is unknown, not 0 %, and the average covers only active
++ * cores. */
++static void test_cpu_active_mask(void)
++{
++    fake_reset();
++    fake_set_cpu_mask(0x5); /* cores 0 and 2 */
++    fake_set_cpu_usage(0, 50);
++    fake_set_cpu_usage(1, 0);
++    fake_set_cpu_usage(2, 100);
++    fake_set_cpu_usage(3, 0);
++
+     metrics_init();
++    metrics_sample_slow();
+ 
+-    for (int i = 0; i < 5; ++i) {
+-        fake_set_memory_mb(180 + i);
+-        metrics_sample_slow();
+-    }
++    CHECK(g_metrics.cpu_valid == 1);
++    CHECK(g_metrics.cpu_core_pct[0] == 50);
++    CHECK(g_metrics.cpu_core_pct[1] == CPU_CORE_UNKNOWN);
++    CHECK(g_metrics.cpu_core_pct[2] == 100);
++    CHECK(g_metrics.cpu_core_pct[3] == CPU_CORE_UNKNOWN);
++    CHECK(g_metrics.cpu_usage_pct == 75);
++}
++
++/* A delta larger than elapsed time is a unit mismatch, not a 0 % core. */
++static void test_cpu_bad_unit_fails_closed(void)
++{
++    fake_reset();
++    metrics_init();
++    metrics_sample_slow();
++
++    int len_before = g_metrics.hist_cpu.len;
++    fake_set_cpu_broken(1);
++    metrics_sample_slow();
++
++    CHECK(g_metrics.cpu_valid == 0);
++    CHECK(g_metrics.cpu_core_pct[0] == CPU_CORE_UNKNOWN);
++    CHECK(g_metrics.hist_cpu.len == len_before);
++}
+ 
+-    int len_before = g_metrics.hist_mem.len;
++/* A failed CPU read leaves the old trace untouched and renders "--". */
++static void test_cpu_failed_read_leaves_trace_alone(void)
++{
++    fake_reset();
++    metrics_init();
++    metrics_sample_slow();
++
++    int len_before = g_metrics.hist_cpu.len;
+     CHECK(len_before > 0);
+-    CHECK(g_metrics.mem_valid == 1);
++    CHECK(g_metrics.cpu_valid == 1);
+ 
+-    fake_set_memory_absent();
++    fake_set_cpu_absent();
+     metrics_sample_slow();
+ 
+-    CHECK(g_metrics.mem_valid == 0);
+-    CHECK(g_metrics.hist_mem.len == len_before);
++    CHECK(g_metrics.cpu_valid == 0);
++    CHECK(g_metrics.cpu_core_pct[0] == CPU_CORE_UNKNOWN);
++    CHECK(g_metrics.hist_cpu.len == len_before);
+ }
+ 
+ /* Unit conversion: the [C] storage risk, now pinned. */
+ static void test_storage_conversion(void)
+ {
+     fake_reset();
+     fake_set_storage(PLATFORM_STORAGE_UX0, 32ull * GB, 20ull * GB);
+     metrics_init();
+ 
+     CHECK(g_metrics.storage[PLATFORM_STORAGE_UX0].valid == 1);
+@@ -168,45 +225,20 @@ static void test_memory_conversion(void)
+     fake_reset();
+     fake_set_memory_mb(182);
+     metrics_init();
+ 
+     CHECK(g_metrics.mem_valid == 1);
+     CHECK(g_metrics.mem_user_mb == 182);
+     CHECK(g_metrics.mem_cdram_mb == 41);
+     CHECK(g_metrics.mem_phy_mb == 64);
+ }
+ 
+-/* The axis is bracketed by the window's own samples, not by zero. */
+-static void test_mem_axis(void)
+-{
+-    fake_reset();
+-    metrics_init();
+-
+-    for (int i = 0; i < 5; ++i) {
+-        fake_set_memory_mb(150 + i * 10);
+-        metrics_sample_slow();
+-    }
+-
+-    CHECK(g_metrics.hist_mem_lo == 150.0f);
+-    CHECK(g_metrics.hist_mem_hi == 190.0f);
+-
+-    /* A flat window is padded around the sample, not from zero. */
+-    fake_reset();
+-    metrics_init();
+-    fake_set_memory_mb(182);
+-    metrics_sample_slow();
+-
+-    CHECK(g_metrics.hist_mem_lo == 180.0f);
+-    CHECK(g_metrics.hist_mem_hi == 184.0f);
+-    CHECK((g_metrics.hist_mem_lo + g_metrics.hist_mem_hi) * 0.5f == 182.0f);
+-}
+-
+ static void test_history_ring(void)
+ {
+     History h;
+ 
+     history_reset(&h);
+     CHECK(h.len == 0);
+     CHECK(history_at(&h, 0) == 0.0f);
+ 
+     for (int i = 0; i < 5; ++i)
+         history_push(&h, (float)i);
+@@ -564,27 +596,29 @@ static void test_plugins_path_truncation(void)
+     memset(&list, 0, sizeof(list));
+     plugins_parse(cfg, &list);
+ 
+     CHECK(list.count == 0);
+     CHECK(list.config_truncated == 1);
+ }
+ 
+ int main(void)
+ {
+     test_alert_policy();
+-    test_failed_memory_leaves_trace_alone();
++    test_cpu_usage();
++    test_cpu_active_mask();
++    test_cpu_bad_unit_fails_closed();
++    test_cpu_failed_read_leaves_trace_alone();
+     test_storage_conversion();
+     test_frame_history_needs_a_frame();
+     test_power_field_validity();
+     test_storage_error_is_carried();
+     test_memory_conversion();
+-    test_mem_axis();
+     test_history_ring();
+     test_frame_floor();
+     test_plugins_parse();
+     test_plugins_sections();
+     test_plugins_capacity();
+     test_plugins_long_name();
+     test_plugins_truncation();
+     test_plugins_scan();
+     test_plugins_path_truncation();
+ 

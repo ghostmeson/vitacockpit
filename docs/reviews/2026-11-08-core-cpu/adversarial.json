@@ -1,0 +1,39 @@
+{
+  "reviewer": "adversarial",
+  "findings": [
+    {
+      "title": "Fabricated 0/S when scheduler counters are absent or roll back",
+      "severity": "P2",
+      "file": "vita-cockpit/src/core/metrics.c",
+      "line": 178,
+      "why_it_matters": "When the console's cumulative switch/wakeup counters are zero-filled, frozen, or step backwards, CORE still prints a confident `CTX 0/S  WAKE 0/S`: `cpu_valid` is decided by the idle clocks alone, and the rate fields are zeroed before the delta test, so a failed counter is indistinguishable from a measured zero. On a running Vita zero context switches per second is impossible, so the hero panel shows an invented number — the exact zero-substitution the project rule forbids. The backwards step is guaranteed eventually for the 32-bit per-core counters (they wrap independently, so the four-core sum always dips), and the persistent version is the firmware partial-fill case the struct's [C] tag already worries about. A per-rate validity flag, cleared on a backwards step and set only after a positive advance, lets the caption render `--`; the adapter can mirror its existing `have_idle` idiom.",
+      "autofix_class": "manual",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "confidence": 75,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.c:178 -- if (in.ctx_switches >= s_prev_cpu.ctx_switches) g_metrics.cpu_ctx_per_s = cpu_rate(in.ctx_switches - s_prev_cpu.ctx_switches, elapsed); -- an unchanged counter passes the test and yields a delta of 0, i.e. a measured-looking 0/s.",
+        "vita-cockpit/src/core/metrics.c:122-123 -- `g_metrics.cpu_ctx_per_s = 0;` / `g_metrics.cpu_wake_per_s = 0;` are re-seeded every sample, so the value left behind by a rejected delta is a plausible zero rather than an absent value.",
+        "vita-cockpit/src/panels/core.c:88-92 -- `if (g_metrics.cpu_valid) { snprintf(right, sizeof(right), \"CTX %d/S  WAKE %d/S\", g_metrics.cpu_ctx_per_s, g_metrics.cpu_wake_per_s); }` -- the caption's only validity gate is `cpu_valid`, which is set by idle-clock survival, not by rate survival.",
+        "vita-cockpit/src/platform/platform_psp2.c:192-207 -- `out->ctx_switches += info.cpuInfo[i].threadSwitchCount;` then `if (!have_idle) return; out->ok = 1;` -- `ok` requires only a nonzero idle clock, so zero-filled or frozen count fields still produce a sample the policy treats as valid.",
+        "README.md:194 -- \"A number the platform cannot report renders `--`; it is never guessed or substituted with zero.\"",
+        "vita-cockpit/docs/DECISIONS.md:1997 -- the fail-closed promise names the idle-clock unit and `activeCpuMask`, but not the two cumulative rate counters the intent also says must fail closed."
+      ],
+      "suggested_fix": "Add per-rate validity to Metrics (e.g. `cpu_ctx_valid` / `cpu_wake_valid`): set each when a forward delta is measured, clear it on a backwards step or while the cumulative value has never advanced, and have `draw_caption` render THEME_ABSENT for a rate whose flag is clear. Optionally mirror the `have_idle` gate in `platform_read_cpu` with a `have_counters` check if a fully absent pair should blank the whole row. Add zero, unchanged, and backwards-counter cases to tools/test/test_metrics.c.",
+      "pre_existing": false
+    }
+  ],
+  "residual_risks": [
+    "The unit guard is one-directional. `core/metrics.c:82` rejects only `idle > elapsed + slack`; if the 3.65 `idleClock` is coarser than microseconds (milliseconds, or a kHz tick), a fully idle core's delta is a small fraction of `elapsed`, every core reads ~100 %, and the trace pins to the top. That is the 'static 100 %' the hardware checklist warns about, while D103 claims a unit mismatch cannot become a percentage. The fake and the tests only exercise the finer-unit direction or an exact 2x mismatch.",
+    "There is no upper bound on `elapsed`. A multi-second gap (LiveArea/standby, debugger pause, a long stall) is averaged as if it were one 100 ms window. If `sceKernelGetProcessTimeWide` advances across standby while `idleClock` does not (or the reverse), the first post-resume sample is a fabricated ~100 % that is pushed into the trace, or a rejected sample that blanks the row for two windows.",
+    "`sceKernelGetSystemInfo` is a strong SceLibKernel import, so a missing NID on 3.65 fails at module load instead of degrading to `--`. The repo's own b141 SceNet failure (agent-wiki/13-fact-check.md) is the precedent. The [C] tag documents the risk, but 'fail closed' cannot cover an unresolved import.",
+    "Catch-up burst: app.c:501-505 can run `metrics_sample_slow()` up to MAX_CATCH_UP_SAMPLES (app.h:21) times inside one frame, so the few milliseconds between those calls becomes a full CPU sample. The extra samples use a window that can fall below the 2 ms slack floor, compress the trace's 20 s time base, and can print a short-window CTX/WAKE rate; the policy has no minimum-window rejection."
+  ],
+  "testing_gaps": [
+    "No test calls `metrics_sample_slow()` twice back-to-back (the app's catch-up path). The fake advances exactly 100 ms per call, so the short-window percentage and rate paths are never exercised.",
+    "No test covers zero, unchanged, or backwards `ctx_switches` / `wakeups` -- the case that currently renders `CTX 0/S` on the panel.",
+    "No test exercises an idle delta inside the slack band (`elapsed < idle <= elapsed + slack`), so the clamp-to-zero branch in `cpu_pct_from_idle` and the unclamped value it contributes to `idle_sum` are untested; the only unit test uses a 2x mismatch.",
+    "The memory failed-read path lost its assertion: `test_failed_memory_leaves_trace_alone` was replaced by the CPU equivalent, and test_metrics.c now calls `fake_set_memory_absent()` only through `test_alert_policy`, so nothing asserts `mem_valid == 0` or the three pools rendering `--` after a failed read.",
+    "No test changes `activeCpuMask` between samples, so a core appearing or disappearing and the mask-intersection behaviour are unverified."
+  ]
+}

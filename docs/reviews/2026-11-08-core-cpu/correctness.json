@@ -1,0 +1,55 @@
+{
+  "reviewer": "correctness",
+  "findings": [
+    {
+      "title": "Wrong-unit guard only detects an idle clock faster than microseconds",
+      "severity": "P2",
+      "file": "vita-cockpit/src/core/metrics.c",
+      "line": 87,
+      "why_it_matters": "The intent and the shipped docs promise that a wrong idle-clock unit renders `--`; the arithmetic only catches a unit that makes the idle counter advance faster than wall time. Every check is one-sided: `if (idle > elapsed + slack) return CPU_CORE_UNKNOWN`. If the value is a coarser unit (milliseconds, seconds, a clock tick larger than 1 us), each per-core delta is a small fraction of elapsed, `busy` lands at 99.9-100 %, and CORE prints a flat 100 % on an idle console instead of `--` - the exact static-100 % failure the hardware checklist warns about, and indistinguishable from a genuinely saturated machine. The b153 hardware run is specifically meant to settle whether the microsecond assumption holds, and on the wrong outcome the panel would confidently show a fabricated number rather than failing closed.",
+      "autofix_class": "manual",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "suggested_fix": "Pick one and make code and docs agree. (a) Minimal: correct the guarantee in PROJECTS.md, DECISIONS.md D103, ARCHITECTURE.md section 7 and the metrics.c comment to say only a faster-than-microsecond idle clock is rejected, so the hardware checklist stops claiming a mismatch always renders `--`. (b) Behavioural: add a lower-bound plausibility guard - if every active core reads exactly 100 % for five consecutive windows (0.5 s), refuse the sample and render `--` until the reading drops, since this dashboard app cannot legitimately pin all four cores for half a second. Assumption: a false `--` is the safe direction under the project rule that a missing value beats a fabricated one.",
+      "confidence": 50,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.c:87-88 -- if (idle > elapsed + slack) / return CPU_CORE_UNKNOWN;  /* no test for the opposite direction */",
+        "vita-cockpit/src/core/metrics.c:41-44 -- \"A wrong unit is orders of magnitude larger and still fails closed.\" Only a finer unit makes the idle delta larger; a coarser unit makes it smaller and passes.",
+        "vita-cockpit/src/core/metrics.c:93-99 -- busy = 100.0 - idle*100/elapsed; a milliseconds counter yields 100 - 100*100/100000 = 99.9 %, rounded to 100 and clamped there.",
+        "PROJECTS.md:17 -- \"[C] sceKernelGetSystemInfo and the microsecond idleClock unit are unconfirmed on this console; a unit mismatch renders --.\"",
+        "vita-cockpit/docs/DECISIONS.md D103 -- \"If an idle delta exceeds the elapsed time, the sample is refused ... so a unit mismatch cannot become a fabricated percentage.\""
+      ],
+      "pre_existing": false
+    },
+    {
+      "title": "Added CPU validity mask and fake rate hook have no consumer",
+      "severity": "P3",
+      "file": "vita-cockpit/src/core/metrics.h",
+      "line": 56,
+      "why_it_matters": "The diff adds `Metrics.cpu_active_mask`, written twice in the sampler and read nowhere, and `fake_set_cpu_activity`, declared and defined but never called. The field is not the machine's mask: it is the intersection with the previous sample, so a future panel or test that picks it up will display something narrower than `activeCpuMask` while believing it is authoritative. The unused setter is worse for coverage: it advertises that the rate path can be driven to a chosen value, but no test ever does, so the 0/S and counter-stall cases stay unasserted. The workspace contract explicitly forbids this (AGENTS.md rule 9).",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": false,
+      "suggested_fix": "Delete `Metrics.cpu_active_mask` and its two assignments (metrics.c:121, metrics.c:174), and delete `fake_set_cpu_activity` plus its declaration, since nothing calls it. If the mask is intended for a panel, add the reader in this change and document that it is the intersected mask; if the rate path needs coverage, add one test that calls `fake_set_cpu_activity(0, 0)` and asserts `cpu_ctx_per_s == 0` / `cpu_wake_per_s == 0`, which also gives the hook a caller.",
+      "confidence": 100,
+      "evidence": [
+        "vita-cockpit/src/core/metrics.h:56 -- unsigned cpu_active_mask;  /* no reader anywhere in src/ or tools/ */",
+        "vita-cockpit/src/core/metrics.c:121,174 -- g_metrics.cpu_active_mask = 0; / g_metrics.cpu_active_mask = mask; (write-only; `mask` is in.active_mask & s_prev_cpu.active_mask at line 140)",
+        "vita-cockpit/tools/fake/fake_platform.c:137 -- void fake_set_cpu_activity(int ctx_per_s, int wake_per_s)  /* declared at fake_platform.h:25; grep of src/ and tools/ finds no call site */",
+        "AGENTS.md rule 9 -- \"No dead code, no unused links. ... Do not keep a function nothing invokes.\""
+      ],
+      "pre_existing": false
+    }
+  ],
+  "residual_risks": [
+    "Catch-up sampling can feed sub-window measurements into the readout and the 20 s trace: metrics_sample_slow() is re-run up to MAX_CATCH_UP_SAMPLES (3, app.h:21) in the tight loop at app.c:501-506. The first call spans the hitch, but the following adjacent calls have an elapsed of only the few microseconds the sampler itself takes. Over that window one running core can show a genuine 0 us idle delta (100 %) and a single context switch turns into a five-figure CTX rate, so after a >200 ms stall (for example a config commit on the main thread) CORE can flash an arbitrary average and rate for one tick and record that sample in a 20 s trace whose axis assumes 100 ms samples. Host tests and the fake (fixed 100 ms step) cannot reproduce it; hardware has not been observed.",
+    "The aggregate in sample_cpu averages the raw idle delta (metrics.c:157), while cpu_pct_from_idle clamps its by-value copy to elapsed at metrics.c:90. In the slack band (idle slightly above elapsed) the per-core value is a clamped 0 % but the aggregate still subtracts the overshoot, so the average can read below the displayed cores by up to the slack (~0.5 points per fully idle core at 10 Hz). Bounded and cosmetic, but the two paths should use the same clamped delta.",
+    "agent-wiki/examples/cockpit/ was not updated with PlatformCpu/platform_read_cpu, so the copied port no longer matches the canonical one the wiki calls the reference. The copies were already stale before this diff (platform.h there still lists three storage mounts including IMC0; the canonical port has two), so this is widened drift rather than a new break, but AGENTS.md requires the example copies to track a project change.",
+    "sceKernelGetSystemInfo availability and the microsecond meaning of idleClock remain [C]; b153 has not run on the console, so every runtime path this review traced is host-only (145 metrics checks pass against the fake)."
+  ],
+  "testing_gaps": [
+    "No host test exercises the `idle > elapsed` but within-slack branch of cpu_pct_from_idle (the clamp to elapsed at line 90). Only the far side (2x step in fake_set_cpu_broken) is covered, so a regression in the clamp - including its mismatch with the unclamped aggregate - would not fail a test.",
+    "No test covers recovery after a failed read: a first `--` tick (s_have_prev_cpu cleared), a second `--` tick while the baseline re-establishes, then a valid sample, and that hist_cpu gains exactly one sample over the sequence.",
+    "No test covers a non-advancing or backwards time_us, where the policy must discard the window without pushing a trace sample, nor an adjacent short-interval sample pair like the catch-up burst."
+  ]
+}

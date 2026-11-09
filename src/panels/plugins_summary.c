@@ -1,0 +1,142 @@
+#include "panels/panel.h"
+
+#include <stdio.h>
+
+#include "core/plugins.h"
+#include "gfx/font.h"
+
+/*
+ * PLUGINS — the activated-plugin summary, on HOME.
+ *
+ * This block replaces the header status line (D63, superseded by D67). It
+ * reports the launch set: the plugins taiHEN actually loaded, grouped by the
+ * load target that named them.
+ *
+ * HOME shows only what is running. A pending edit has not taken effect yet and
+ * belongs to the PLUGINS tab that made it, so the block carries no pending
+ * token (D68). The block does not list every plugin either; that is the
+ * ledger's job. Here it answers one question — how many plugins are online, and
+ * where do they sit — in one glance.
+ */
+
+#define SUMMARY_NUMBER_Y PANEL_BODY_Y
+#define SUMMARY_LABEL_DY (LINE_H(PX_PRIMARY) - LINE_H(PX_LABEL))
+#define SUMMARY_LABEL_GAP SP_4
+#define SUMMARY_GROUPS_Y (SUMMARY_NUMBER_Y + LINE_H(PX_PRIMARY) + SP_2)
+#define SUMMARY_TEXT_MAX 192
+
+static const PluginSection GROUP_ORDER[PLUGIN_SECTION_COUNT] = {
+    PLUGIN_SECTION_KERNEL, PLUGIN_SECTION_SYSTEM, PLUGIN_SECTION_SYSTEM_APP,
+    PLUGIN_SECTION_ALL_TITLES, PLUGIN_SECTION_TITLE};
+
+static const char *const GROUP_LABEL[PLUGIN_SECTION_COUNT] = {
+    "KERNEL", "SYSTEM", "SYSTEM APPS", "ALL TITLES", "TITLES"};
+
+static int group_count(PluginSection section)
+{
+    return plugins_section_count(section);
+}
+
+/* One line of label/count pairs, separated by a full step of air. */
+static void draw_groups(Rect r)
+{
+    char line[SUMMARY_TEXT_MAX];
+    size_t used = 0;
+
+    line[0] = '\0';
+
+    for (int i = 0; i < PLUGIN_SECTION_COUNT; ++i) {
+        int n = group_count(GROUP_ORDER[i]);
+
+        if (n == 0)
+            continue;
+
+        if (used >= sizeof(line))
+            break;
+
+        int wrote = snprintf(line + used, sizeof(line) - used, "%s%s %d",
+                             used > 0 ? "   " : "",
+                             GROUP_LABEL[GROUP_ORDER[i]], n);
+
+        if (wrote < 0)
+            break;
+
+        used += (size_t)wrote;
+    }
+
+    /* An empty config is a real state, not a drawing failure. */
+    if (line[0] == '\0')
+        snprintf(line, sizeof(line), "NO PLUGINS LISTED");
+
+    font_text(line, r.x + PANEL_INSET, r.y + SUMMARY_GROUPS_Y, PX_MICRO, C_DIM);
+}
+
+/* A config warning shares the right end of the group line. */
+static void draw_warning(Rect r)
+{
+    float right = r.x + r.w - PANEL_INSET;
+    float y = r.y + SUMMARY_GROUPS_Y;
+
+    font_text_right("CONFIG WARNING", right, y, PX_MICRO, C_YELLOW);
+}
+
+static void draw_hero(Rect r, const char *number, const char *headline,
+                      uint32_t number_colour, uint32_t headline_colour)
+{
+    float x = r.x + PANEL_INSET;
+
+    font_text(number, x, r.y + SUMMARY_NUMBER_Y, PX_PRIMARY, number_colour);
+
+    float label_x = x + font_width(number, PX_PRIMARY) + SUMMARY_LABEL_GAP;
+    font_text(headline, label_x, r.y + SUMMARY_NUMBER_Y + SUMMARY_LABEL_DY,
+              PX_LABEL, headline_colour);
+}
+
+static void draw_plugins_summary(const Panel *self, Rect r)
+{
+    char number[8];
+    const char *headline;
+    uint32_t number_colour = C_WHITE;
+    uint32_t headline_colour = C_WHITE;
+    int warning = 0;
+
+    (void)self;
+
+    if (g_plugins.config_too_large) {
+        snprintf(number, sizeof(number), "%s", THEME_ABSENT);
+        headline = "CONFIG TOO LARGE";
+        number_colour = C_DIM;
+        headline_colour = C_YELLOW;
+        warning = 1;
+        font_text("READ ONLY", r.x + PANEL_INSET, r.y + SUMMARY_GROUPS_Y,
+                  PX_MICRO, C_YELLOW);
+    } else if (!g_plugins.config_found) {
+        snprintf(number, sizeof(number), "%s", THEME_ABSENT);
+        headline = g_plugins.config_unreadable ? "CONFIG UNREADABLE"
+                                               : "NO CONFIG.TXT";
+        number_colour = C_DIM;
+        headline_colour = C_YELLOW;
+        warning = 1;
+        font_text(g_plugins.config_unreadable ? "READ ONLY"
+                                              : "UR0:TAI OR UX0:TAI",
+                  r.x + PANEL_INSET, r.y + SUMMARY_GROUPS_Y, PX_MICRO,
+                  C_YELLOW);
+    } else {
+        int count = plugins_count();
+
+        snprintf(number, sizeof(number), "%d", count);
+        headline = count == 1 ? "PLUGIN LISTED" : "PLUGINS LISTED";
+        number_colour = count > 0 ? C_GREEN : C_WHITE;
+        headline_colour = count > 0 ? C_WHITE : C_DIM;
+        warning = g_plugins.config_invalid || g_plugins.config_truncated;
+
+        draw_groups(r);
+    }
+
+    draw_hero(r, number, headline, number_colour, headline_colour);
+
+    if (g_plugins.config_found && !g_plugins.config_too_large && warning)
+        draw_warning(r);
+}
+
+const Panel panel_plugins_summary = {"PLUGINS", C_CYAN, draw_plugins_summary};

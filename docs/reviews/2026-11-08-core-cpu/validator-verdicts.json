@@ -1,0 +1,52 @@
+{
+  "verdicts": [
+    {
+      "#": 1,
+      "status": "confirmed",
+      "protected_subject": null,
+      "reason": "Confirmed: `cpu_pct_from_idle()` only rejects `idle > elapsed` (metrics.c:82-88), so a coarser idle-clock unit makes each idle delta a small fraction of elapsed and `busy` rounds to 100 %, while platform.h:83-85, platform_psp2.c:165-166, D103 and PROJECTS.md:26 promise a unit mismatch renders `--`; hardware incidence was not measured."
+    },
+    {
+      "#": 2,
+      "status": "confirmed",
+      "protected_subject": null,
+      "reason": "Confirmed: `sample_cpu()` zeroes both rates (metrics.c:122-123), assigns them only in the `>=` branches (metrics.c:178-183) while `cpu_valid` comes from the idle-clock core count alone (metrics.c:173), so a regressed 32-bit counter or narrowed active mask leaves 0 and core.c:88-92 prints `CTX 0/S WAKE 0/S`; hardware incidence was not measured."
+    },
+    {
+      "#": 3,
+      "status": "confirmed",
+      "protected_subject": null,
+      "reason": "Confirmed: tools/test/run.sh:20-25 does not link any panels source, test_metrics.c:142 is the only `fake_set_cpu_absent()` call and asserts only `g_metrics` fields, and no preview scene sets CPU absent or mask 0, so the THEME_ABSENT branch at panels/core.c:56-61 is never rendered."
+    },
+    {
+      "#": 4,
+      "status": "confirmed",
+      "protected_subject": null,
+      "reason": "Confirmed: the new ARCHITECTURE.md:320 row says 'the adapter rejects a delta larger than elapsed time' and names `platform_psp2.c`, whose `platform_read_cpu` (151-208) contains no delta-versus-elapsed check; the rejection is `cpu_pct_from_idle()` in core/metrics.c:82-88, contradicting the doc's own rule at ARCHITECTURE.md:333."
+    },
+    {
+      "#": 5,
+      "status": "confirmed",
+      "protected_subject": null,
+      "reason": "Confirmed: `g_metrics.cpu_active_mask` is written only at metrics.c:121 and :174 and read nowhere in src/ or tools/ (and records the pre-filter candidate `mask`, not the measured cores), while `fake_set_cpu_activity()` has only its declaration and definition and no call site, contrary to AGENTS.md rule 9."
+    },
+    {
+      "#": 6,
+      "status": "confirmed",
+      "protected_subject": null,
+      "reason": "Confirmed: metrics.h:98 still says '~10 Hz. Memory, storage, power, identity, wall clock.' while this diff adds `sample_cpu()` to `metrics_sample_slow()` at metrics.c:311, so the header contract omits the CPU reading."
+    },
+    {
+      "#": 7,
+      "status": "confirmed",
+      "protected_subject": null,
+      "reason": "Confirmed: the only `hist_cpu` assertions are length/value checks at test_metrics.c:89-90, 122, 128, 138 and 147; the 0/100 axis literals are in panels/core.c:115-116, which test/run.sh does not link, and the preview asserts no axis, so the `[V]` 'fixed 0-100 % trace' claim in 13-fact-check.md:88 is unsupported."
+    },
+    {
+      "#": 8,
+      "status": "confirmed",
+      "protected_subject": null,
+      "reason": "Confirmed: PROJECTS.md:26's Next cell chains three semicolon-separated actions ('Flash ...; confirm ...; then run ...') against AGENTS.md's explicit rule that Next holds 'the single next action, not a list'."
+    }
+  ]
+}

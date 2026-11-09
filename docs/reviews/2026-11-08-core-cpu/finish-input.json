@@ -1,0 +1,148 @@
+{
+  "run_id": "20261108-105324-38da7151",
+  "run_dir": "/tmp/compound-engineering-501/ce-code-review/20261108-105324-38da7151",
+  "skill_dir": "/Users/ghostmeson/.cache/opencode/npm/git-compound-engineering-plugin-9b12051c10ac/1793292042140/node_modules/compound-engineering/skills/ce-code-review",
+  "docs_root": "docs",
+  "mode": {
+    "agent": false,
+    "apply_local": false,
+    "grouping": "auto",
+    "depth": "full"
+  },
+  "invocation": {
+    "arguments": "do a ce-code-review of the diff",
+    "constraints": []
+  },
+  "scope": {
+    "mode": "standalone",
+    "base": "HEAD^",
+    "diff_a": "a4ef5d46ad9ccd5ca0cbeeb0d8467f2606b14088",
+    "diff_b": null,
+    "pr": {
+      "number": null,
+      "url": null,
+      "title": null,
+      "body": null,
+      "base_ref_name": null,
+      "head_ref_oid": null,
+      "head_ref": null,
+      "base_ref": null,
+      "has_prior_comments": false
+    },
+    "branch": "review/codebase-health",
+    "head_sha": "1910e0fbf2546b21753039247a7418628dc62618",
+    "files": "/tmp/compound-engineering-501/ce-code-review/20261108-105324-38da7151/files.txt",
+    "diff": "/tmp/compound-engineering-501/ce-code-review/20261108-105324-38da7151/full.diff",
+    "tree_is_reviewed_head": true,
+    "untracked_excluded": [
+      "vitaFTPShell/"
+    ]
+  },
+  "intent": {
+    "summary": "Replace CORE's memory-only panel with real userland CPU activity from sceKernelGetSystemInfo: per-core load, active-core average, context-switch/wakeup rates, and a fixed 0-100% trace. Keep the memory pools; do not add a kernel plugin or fabricate GPU load/applied clocks. Must fail closed to \"--\" when the scheduler counters are unavailable or the idle-clock unit is wrong.",
+    "confidence": "explicit"
+  },
+  "plan": {
+    "path": null,
+    "source": "none",
+    "requirements": [],
+    "implementation_units": [],
+    "settled_decisions": []
+  },
+  "roster": {
+    "selected": [
+      {
+        "reviewer": "correctness",
+        "tier": "session",
+        "reason": "always-on"
+      },
+      {
+        "reviewer": "project-standards",
+        "tier": "mid",
+        "reason": "root AGENTS.md governs every changed file"
+      },
+      {
+        "reviewer": "testing",
+        "tier": "mid",
+        "reason": "new tests and changed runtime sampling behavior"
+      },
+      {
+        "reviewer": "maintainability",
+        "tier": "mid",
+        "reason": "497 executable non-test changed lines and a new port surface"
+      },
+      {
+        "reviewer": "adversarial",
+        "tier": "session",
+        "reason": "large executable diff; cross-model peer unavailable, in-process lens"
+      }
+    ],
+    "standards": {
+      "criteria": [
+        {
+          "path": "AGENTS.md",
+          "files": [
+            "PROJECTS.md",
+            "README.md",
+            "agent-wiki/12-projects.md",
+            "agent-wiki/13-fact-check.md",
+            "vita-cockpit/BUILD_NUMBER",
+            "vita-cockpit/README.md",
+            "vita-cockpit/docs/ARCHITECTURE.md",
+            "vita-cockpit/docs/DECISIONS.md",
+            "vita-cockpit/docs/DESIGN.md",
+            "vita-cockpit/docs/PROJECT.md",
+            "vita-cockpit/docs/preview-healthy.png",
+            "vita-cockpit/docs/preview-home-plugins-warning.png",
+            "vita-cockpit/docs/preview-home-plugins.png",
+            "vita-cockpit/src/core/history.c",
+            "vita-cockpit/src/core/history.h",
+            "vita-cockpit/src/core/metrics.c",
+            "vita-cockpit/src/core/metrics.h",
+            "vita-cockpit/src/core/platform.h",
+            "vita-cockpit/src/panels/core.c",
+            "vita-cockpit/src/platform/platform_psp2.c",
+            "vita-cockpit/tools/fake/fake_platform.c",
+            "vita-cockpit/tools/fake/fake_platform.h",
+            "vita-cockpit/tools/preview/preview.c",
+            "vita-cockpit/tools/test/test_metrics.c"
+          ]
+        }
+      ],
+      "fallback_named": true,
+      "not_run_reason": null
+    },
+    "packs": {
+      "roots": [],
+      "errors": [],
+      "warnings": []
+    }
+  },
+  "collection": {
+    "returns": "/tmp/compound-engineering-501/ce-code-review/20261108-105324-38da7151/raw-returns.json",
+    "unstructured_returns": [],
+    "failed_reviewers": [],
+    "bound_exceeded": [],
+    "fast_pass": {
+      "emitted_preliminary": false,
+      "candidates": []
+    }
+  },
+  "peer": {
+    "selected": false,
+    "target": null,
+    "route": null,
+    "preference_source": null,
+    "outcome": "not-run",
+    "artifact": null,
+    "coverage": "cross-model pass: not run; host serving family is un-attestable under OpenCode/DeepSeek, so the in-process adversarial reviewer covered the lens."
+  },
+  "coverage_notes": [
+    "Review depth: full (497 executable non-test changed lines; scope helper reported size_band=large and an uncounted-file floor).",
+    "Project standards ran against the root AGENTS.md instruction-file fallback; no CODING_STANDARDS.md exists in the tree.",
+    "Untracked `vitaFTPShell/` was excluded from review scope.",
+    "No plan was discovered; requirements completeness is not applicable.",
+    "Cross-model adversarial pass: not run because the host serving family is un-attestable under OpenCode/DeepSeek; the in-process adversarial reviewer covered the adversarial lens.",
+    "Fast pass emitted no preliminary P0/P1 candidates."
+  ]
+}
