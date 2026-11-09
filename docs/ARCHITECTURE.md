@@ -73,15 +73,18 @@ server.
 | `gfx/theme` | palette, panel chrome, meters, traces, formatters | `gfx/*`, `core/history` |
 | `panels/*` | one panel each; draw one region | `core/metrics`, `gfx/theme`, `gfx/font`, `gfx/layout`, `ui/core_text` |
 | `panels/plugins` | the PLUGINS header, rows, preview list, pinned dock, and its geometry | `core/plugin_editor`, `core/tai_config.h`, `gfx/*`, `ui/plugin_flow`, `ui/ui_state` |
-| `panels/plugins_summary` | the HOME activated-plugin summary block | `core/plugins`, `gfx/*` |
+| `panels/plugins_summary` | the VITALS activated-plugin summary block | `core/plugins`, `gfx/*` |
 | `ui/core_text` | pure CORE readout formatting, including the per-field `--` contract | `gfx/theme` |
 | `ui/header` | wordmark, clock, tabs, hazard band | `core/metrics`, `gfx/theme`, `gfx/font`, `gfx/layout`, `ui/tabbar` |
-| `ui/ui_state` | navigation state: tab, two scrolls, selection, dock focus, dock message, and the one modal | nothing |
-| `ui/tabbar` | tab labels | `gfx/*`, `ui/ui_state` |
-| `ui/modal` | the error interrupt | `gfx/*`, `ui/ui_state` |
-| `ui/plugin_flow` | the derived dock state, action order, labels, availability, warnings, focus, and one dock-fact table; no SDK, renderer, or modal dependency | `core/plugin_editor`, `core/metrics`, `ui/ui_state` |
+| `ui/ui_state` | navigation state: tab, two scrolls, selection, dock focus, dock message, and the modal kind | nothing |
+| `ui/tabbar` | the three tab labels | `gfx/*`, `ui/ui_state` |
+| `ui/modal` | the error, safety-card, and reboot-choice surfaces; the scrim | `gfx/*`, `ui/ui_state`, `ui/launch_card` |
+| `ui/launch_card` | pure launch-card copy from the editor's snapshot result | `core/plugin_editor` |
+| `ui/about` | the ABOUT page composition | `cockpit_build.h`, `gfx/*`, `ui/plugin_flow`, `ui/ui_state` |
+| `ui/about_text` | pure ABOUT reboot-confirmation copy | `core/plugin_editor` |
+| `ui/plugin_flow` | the derived dock state, action order, labels, availability, warnings, the shared reboot gate, focus, and one dock-fact table; no SDK, renderer, or modal dependency | `core/plugin_editor`, `core/metrics`, `ui/ui_state` |
 | `ui/plugin_nav` | tab/list/dock/modal event routing, SAVE-vs-CONFIRM commit mode, and scroll clamps; no SDK or renderer dependency | `core/input`, `ui/plugin_flow`, `ui/ui_state` |
-| `app/screen` | one frame: header, active tab, HOME frame strip, modal, sweep | `gfx/*`, `panels/*`, `ui/*`, `ui/ui_state` |
+| `app/screen` | one frame: header, the active tab (PLUGINS, VITALS, or ABOUT), the VITALS frame strip, modal, sweep | `gfx/*`, `panels/*`, `ui/*`, `ui/ui_state` |
 | `app/app` | lifecycle, fixed-rate scheduler, frame loop, pad adapter, nav-action execution, transaction dispatch, `UiState` | everything below |
 | `main.c` | `vita2d_init()`, `app_run()`, `vita2d_fini()` | `app/app`, `vita2d.h` |
 
@@ -92,7 +95,7 @@ what lets `tools/preview` link it unchanged.
 `core/plugins` and `core/plugin_editor` deliberately keep separate line models:
 the first only needs the activated set, the second needs offsets, line endings,
 reachability, and pending state. They share `core/tai_config.h` for the grammar,
-so a section name or plugin suffix cannot fork between HOME and PLUGINS.
+so a section name or plugin suffix cannot fork between VITALS and PLUGINS.
 
 `ui/plugin_flow` is policy, not presentation: it owns the derived
 `PluginFlowState`, the action order and labels, availability, warning precedence,
@@ -100,8 +103,12 @@ and the focus transitions, but it draws nothing and calls no SDK. `ui/plugin_nav
 owns what an input event means for the tab, the list, the dock, and the modal,
 plus the SAVE-vs-CONFIRM commit mode and the scroll clamps; `app/app` only
 executes the result. Both are platform-free, which is what lets `tools/test`
-link them and exercise the routing without a Vita. `ui/modal` draws the one
-error interrupt; there are no choice modals and no self-plugin block.
+link them and exercise the routing without a Vita. `ui/modal` draws three kinds:
+the error interrupt, the launch safety gate, and the reboot choice. The safety
+gate is the only modal that appears without a user action; it is composed by
+`ui/launch_card` from the editor's launch result. `ui/about_text` owns the
+confirmation copy, and `ui/plugin_flow` owns the single reboot gate both ABOUT
+and the dock read. There is no self-plugin block.
 
 `core/plugin_editor` is the only writer of `g_editor`. A stage changes the
 working text and reparses it with no platform call; a commit is the only path
@@ -114,6 +121,13 @@ and the launch lookup the host test needs. The panel and the dock read the cache
 flags and never open, stat, or write a file. A restore is refused when the live
 file was not fully parsed, and the `write_unrecovered` state keeps undo available
 to repair it (D79).
+
+Build identity is generated, not hand-written. `tools/gen-build-id.sh` reads
+`VITA_VERSION` from `CMakeLists.txt` and `BUILD_NUMBER`, then writes
+`build/generated/cockpit_build.h`. CMake, `tools/test/run.sh`, and
+`tools/preview/run.sh` all call it, so ABOUT, the host tests, the previews, and
+the VPK name cannot drift. The package keeps `##.##`; ABOUT drops the leading
+zero for the release label (`01.01` becomes `1.01`).
 
 Outside the app: `tools/fake/` is the shared mutable port double, `tools/test/`
 links it against the real `core/` to assert the sampling policy and the plugin
@@ -322,7 +336,8 @@ cached facts and draws; it never reads, stats, or writes a file.
 | `scePowerRequestColdReset` exists | `[V]` `psp2/power.h`; linked from `ScePower` | `platform_psp2.c` |
 | `sceKernelGetSystemInfo` is a userland `SceLibKernel` export with per-core idle, wakeup, and thread-switch counters | `[V]` `psp2/kernel/threadmgr/thread.h` | `platform_psp2.c` |
 | `cpuInfo[].idleClock` advances in microseconds | `[C]` the header does not state the unit; `core/metrics.c` rejects a delta larger than elapsed time. A coarser unit is not detectable from the counter, so the hardware checklist treats a static 100 % at idle as unavailable. | `core/metrics.c`, `platform_psp2.c` |
-| A userland UNSAFE eboot may cold-reset on 3.65 Enso | `[C]` the header says it always returns 0; the reset itself is unverified | `platform_psp2.c` |
+| A userland UNSAFE eboot may cold-reset on 3.65 Enso | `[C]` the header says it always returns 0; the reset itself is unverified, including from the ABOUT confirmation | `platform_psp2.c` |
+| Holding the power button for two seconds opens the power menu, and five seconds forces a shutdown | `[V]` the official PS Vita user guide; `[C]` the exact on-console path on this 3.65 Enso unit | `ui/about.c` |
 | `sceIoSyncByFd` flushes data before close | `[V]` declared in `psp2/io/fcntl.h`; its effect is best-effort here | `platform_psp2.c` |
 | `boot_config.txt` is never opened | `[V]` no source path names it | `core/plugin_editor.c` |
 
@@ -363,20 +378,20 @@ int layout_max_scroll(void);
 ```
 
 `app_run` owns one `UiState` and passes a read-only pointer to `screen_draw`.
-On HOME, `screen_draw` walks `g_layout`, draws the chrome through
+On VITALS, `screen_draw` walks `g_layout`, draws the chrome through
 `theme_panel()`, then calls the panel's `draw` with its rect. On PLUGINS, it calls
 `plugins_screen_draw(ui, plugins_content_height())`, which owns its own canvas,
-selection, clipping, and pinned dock. Panels own no data: the only mutable state
-is `UiState` in `app/app`, the launch/edited config models in `core/plugins` and
+selection, clipping, and pinned dock. On ABOUT, it calls `about_draw()`, which
+owns one page panel. Panels own no data: the only mutable state is `UiState` in
+`app/app`, the launch/edited config models in `core/plugins` and
 `core/plugin_editor`, and the derived dock policy in `ui/plugin_flow` (pure
 functions over the editor and the metrics sample). `core/plugins.c` owns
 `g_plugins`, and `core/plugin_editor.c` owns `g_editor`; no panel writes either.
 
 `UiState` carries only navigation and the inline dock cursor: `tab`,
-`home_scroll`, `plugins_scroll`, `selection`, `focus`, `dock_choice`,
-`dock_message`, and the one error modal. The dock state itself is derived every
-frame by `plugin_flow_state()`; it is never stored, so it cannot drift from the
-editor.
+`vitals_scroll`, `plugins_scroll`, `selection`, `focus`, `dock_choice`,
+`dock_message`, and the modal kind. The dock state itself is derived every frame
+by `plugin_flow_state()`; it is never stored, so it cannot drift from the editor.
 
 There is no elapsed-time argument to a panel. Nothing inside a panel animates:
 the traces are driven by the history they read, and the only time-based motion
@@ -387,17 +402,17 @@ Geometry lives in the layout table, not in the panel. That is what allows an
 asymmetric screen (D17): a panel that computed its own rect from a grid index
 could not be 552 wide while its neighbour is 360.
 
-The home table is fixed. It holds no plugin slot: the ledger moved to its own
+The VITALS table is fixed. It holds no plugin slot: the ledger moved to its own
 tab, and `plugins_screen_draw(ui, content_h)` owns that canvas, its row
 geometry, its selection, and its dock (D54, D57). Each `PluginInfo` carries its
 `PluginSection`; a file listed under several targets keeps the most privileged
 one. The launch list holds up to `PLUGINS_MAX` entries and sets
 `PluginList.truncated` when a config exceeds that (D50). The editable model in
 `core/plugin_editor` has its own ceilings and reports its own truncation.
-`layout_canvas_height()` and `layout_max_scroll()` are derived from the home
+`layout_canvas_height()` and `layout_max_scroll()` are derived from the VITALS
 table, so neither can drift from it (D49).
 
-`screen_draw()` skips any home panel whose translated rect falls entirely
+`screen_draw()` skips any VITALS panel whose translated rect falls entirely
 outside the view band, and `plugins_screen_draw()` applies the same test per
 group and row. The scissor would discard every pixel of them anyway.
 
@@ -407,13 +422,15 @@ that distinguishes them is `theme_panel()`'s job, selected by `PanelSlot.chrome`
 
 ### Adding a panel or a tab
 
-1. For a HOME panel, create `src/panels/<name>.c`, define `Panel panel_<name>`,
+1. For a VITALS panel, create `src/panels/<name>.c`, define `Panel panel_<name>`,
    and add one `PanelSlot` entry in `panels/registry.c`. There is no mutable
    layout pass; the rect is fixed.
-2. For a tab, add a `UiTab` value, a tab label in `ui/tabbar.c`, and a draw
-   branch in `app/screen.c`. Keep the tab's state in `UiState`; do not add a
-   second global. Tabs that need their own canvas, like PLUGINS, own their
-   geometry and clipping in their panel module.
+2. For a tab, add a `UiTab` value in `ui/ui_state.h`, a tab label in
+   `ui/tabbar.c`, a `plugin_nav_tab_step()` order, and a draw branch in
+   `app/screen.c`. Keep the tab's state in `UiState`; do not add a second
+   global. Tabs that need their own canvas, like PLUGINS, own their geometry and
+   clipping in their panel module; a page like ABOUT can own a single panel and
+   no scroll.
 3. Add the source file to `CMakeLists.txt` and to `tools/preview/run.sh`. Both
    list sources explicitly; the preview list is the one that gets forgotten, and
    forgetting it means the preview silently stops rendering the panel.

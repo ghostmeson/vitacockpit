@@ -13,12 +13,12 @@ not survive a 5-inch screen.
 
 Fixed 960 × 544 output, no scaling (D13). The *panel area* is a scrolling
 viewport onto a taller canvas (D45), so regions no longer have to fit on one
-screen. The header is pinned. On HOME the FRAME strip is pinned too; on PLUGINS
-the ledger and its transaction dock own the bottom of the screen (D81).
+screen. The header is pinned. On VITALS the FRAME strip is pinned too; on
+PLUGINS the ledger and its transaction dock own the bottom of the screen (D81).
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ COCKPIT      HOME  PLUGINS  L/R                  14:22:07    │
+│ COCKPIT   PLUGINS  VITALS  ABOUT  L/R            14:22:07    │
 ├──────────────────────────────────────────────────────────────┤
 │ CORE 552×210                 │ POWER 360×210                  │
 │ C0 18%  C1 22%  C2 9%  C3 4% │                                │
@@ -43,8 +43,9 @@ the ledger and its transaction dock own the bottom of the screen (D81).
 
 The PLUGINS tab replaces the panel area with a full-width ledger and a pinned
 transaction dock; the header stays pinned and the FRAME strip is not drawn, so
-the ledger runs to the bottom of the screen. The drawing is schematic (the HOME
-screen); the table below is the exact geometry. The clock is the only identity
+the ledger runs to the bottom of the screen. ABOUT replaces it with one
+satellite panel and no scrollbar. The drawing is schematic (the VITALS screen);
+the table below is the exact geometry. The clock is the only identity
 in the header. The device model lives in SYSTEM, so nothing appears twice. The
 PLUGINS block is the last canvas panel: at scroll 0 it sits just below the fold,
 and the scrollbar is the affordance that reaches it (D67).
@@ -58,13 +59,14 @@ and the scrollbar is the affordance that reaches it (D67).
 | POWER | 582 | 0 | 360 | 210 |
 | STORAGE | 18 | 222 | 552 | 172 |
 | SYSTEM | 582 | 222 | 360 | 172 |
-| PLUGINS | 18 | 406 | 924 | 140 |
-| FRAME | 18 | 482 | 924 | 44 | (pinned, screen coords, HOME only) |
+| PLUGINS summary | 18 | 406 | 924 | 140 |
+| FRAME | 18 | 482 | 924 | 44 | (pinned, screen coords, VITALS only) |
+| ABOUT | 18 | 76 | 924 | 370 | (screen coords, no canvas, no scroll) |
 
 Panel `y` is canvas coordinates; the app offsets them by the scroll and clips to
-the band at y 64..472 on HOME. The band carries a 12 px top inset, so the first
+the band at y 64..472 on VITALS. The band carries a 12 px top inset, so the first
 panel starts at screen y 76 and its outline is whole; the inset scrolls away. The
-home canvas is `546` (the PLUGINS lower edge), and `layout_max_scroll()` is 150
+VITALS canvas is `546` (the PLUGINS lower edge), and `layout_max_scroll()` is 150
 because `546 > 408 - 12`. The PLUGINS tab uses its own canvas and its own band:
 `plugins_content_height()` starts at 0 and grows with the rows, groups, and
 orphan section; its scroll range is `height - (PLUGINS_VIEW_H - VIEW_TOP_GAP - plugins_dock_height())`.
@@ -286,11 +288,12 @@ autoscaled trace declares its range instead of implying one.
 
 ### Tabs
 
-The 64 px header carries the tabs between the wordmark and the clock. `HOME` and
-`PLUGINS` are label-scale, 1 px tracked; the active tab is `C_YELLOW` with a 2 px
-underline at y 36, the inactive tab is `C_DIM`, and `L/R` sits beside them. The
-header carries no plugin count: that is a panel on HOME (D67). The hazard band
-sits at y 48, the line below the tabs, so a fault and the tabs coexist.
+The 64 px header carries the tabs between the wordmark and the clock. `PLUGINS`,
+`VITALS`, and `ABOUT` are label-scale, 1 px tracked, at x 210, 310, and 400; the
+active tab is `C_YELLOW` with a 2 px underline at y 36, the inactive tab is
+`C_DIM`, and `L/R` sits at x 480. The header carries no plugin count: that is a
+panel on VITALS (D67). The hazard band sits at y 48, the line below the tabs, so a
+fault and the tabs coexist.
 
 ### PLUGINS summary block
 
@@ -311,7 +314,7 @@ bottom:
 stray path or a truncated row was seen. The count is the listed set, not a
 per-title runtime claim; the group line separates KERNEL, SYSTEM, SYSTEM APPS,
 ALL TITLES, and TITLES. A pending edit is state belonging to the PLUGINS tab
-that made it, not a HOME reading (D68).
+that made it, not a VITALS reading (D68).
 
 A config problem replaces the count with `--` and names the state beside it:
 `NO CONFIG.TXT` with `UR0:TAI OR UX0:TAI`, `CONFIG UNREADABLE` or
@@ -319,7 +322,7 @@ A config problem replaces the count with `--` and names the state beside it:
 
 The block is read-only; every action lives on the PLUGINS tab. It is fixed in
 height because its content is a summary, and it sits below the fold at scroll 0,
-so HOME carries a scrollbar whose thumb reaches it. The block has no ceiling to
+so VITALS carries a scrollbar whose thumb reaches it. The block has no ceiling to
 hit: the group line is one line regardless of plugin count.
 
 ### PLUGINS tab
@@ -472,13 +475,25 @@ from the action area. Warnings sit on their own bottom line behind a 2 px yellow
 marker; an idle restore failure draws its reason beside the restore buttons
 behind the same marker.
 
-#### Error interrupt
+#### Modal layer
 
-The only dialog left is the unrecoverable-write `DO NOT REBOOT` panel. It shares
-the 600 × 240 frame, the title, and the wrapped body (up to ten micro lines).
-Cross or Circle closes it; there is no choice row. Every other failure is inline
-on the dock, because it is retryable and the draft or preview stays behind it
-(R38, D99).
+Three modal kinds share one scrim and the panel chrome:
+
+- `UI_MODAL_ERROR` — the unrecoverable-write `DO NOT REBOOT` panel. 600 × 240,
+  up to ten micro lines, Cross or Circle closes it. Every other failure is
+  inline on the dock, because it is retryable and the draft or preview stays
+  behind it (R38, D99).
+- `UI_MODAL_SAFETY` — the launch gate. 720 × 260 at y 130, a label-scale body
+  of up to eight lines, Cross or Circle continues. It is the first screen and
+  blocks the tab bar, the list, and the dock.
+- `UI_MODAL_REBOOT` — the ABOUT choice. 600 × 240, a label-scale body of up to
+  six lines, `CROSS CONFIRM   CIRCLE CANCEL`. Cross sends the request; Circle
+  closes without one.
+
+A single `theme_scrim` pass sits under all three, so the app behind is
+recognizable but reads as unavailable. The safety card's body is composed from
+the launch result; a failed snapshot, an unreadable or oversized config, and a
+missing config each get their own sentence.
 
 Dock copy is exact and ASCII:
 
@@ -508,17 +523,18 @@ a relaunch the app cannot prove the saved config booted, so the dock shows
 The sticks scroll continuously; the D-pad chooses (D76). The larger vertical
 stick deflection wins, with a 0.18 dead zone, a squared response after the dead
 zone, and 520 px/s at the rim. The result is clamped and applied to the active
-surface: the HOME canvas, the PLUGINS list, or the restore preview. HOME keeps a
-stepped D-pad scroll because it has no selection; on PLUGINS the stick is the
-only way past the last row into the orphan section.
+surface: the VITALS canvas, the PLUGINS list, or the restore preview. VITALS
+keeps a stepped D-pad scroll because it has no selection; on PLUGINS the stick is
+the only way past the last row into the orphan section.
 
 On PLUGINS the D-pad moves the row selection. Down from the last row enters the
 dock; in the read-only preview, Down enters it from anywhere. Up returns to the
 list, Left/Right selects an available dock action, Cross stages a row or
 activates the focused dock action, Circle returns from the dock, and Triangle
-toggles dock focus. L/R still switch tabs. The preview list is read-only and
-Cross on it does nothing. The one remaining modal (the unrecoverable-write
-interrupt) takes Cross or Circle and ignores the stick (R29, R45-R48).
+toggles dock focus. L/R step tabs and wrap. The preview list is read-only and
+Cross on it does nothing. The modal layer takes Cross or Circle; the reboot
+confirmation is the only one with two outcomes, and the safety card blocks the
+tab bar, the list, and the dock until it is acknowledged (R29, R45-R48).
 
 #### Commit, restore, and snapshots
 
@@ -614,15 +630,23 @@ synthetic.
 
 | State | Image |
 |---|---|
+| PLUGINS landing | [preview-plugins.png](preview-plugins.png) |
 | PLUGINS header | [preview-header-normal.png](preview-header-normal.png) |
 | Row states and badges | [preview-rows.png](preview-rows.png) |
 | NEXT ON / NEXT OFF | [preview-plugins-next.png](preview-plugins-next.png) |
 | Restore preview | [preview-preview-list.png](preview-preview-list.png) |
 | Draft dock | [preview-dock-draft.png](preview-dock-draft.png) |
 | Saved dock | [preview-dock-saved.png](preview-dock-saved.png) |
-| CORE, CPU and memory | [preview-healthy.png](preview-healthy.png) |
+| VITALS: CORE, CPU and memory | [preview-healthy.png](preview-healthy.png) |
+| VITALS: plugin summary | [preview-vitals-plugins.png](preview-vitals-plugins.png) |
+| VITALS: config warning | [preview-vitals-plugins-warning.png](preview-vitals-plugins-warning.png) |
+| Launch safety card | [preview-safety-card.png](preview-safety-card.png) |
+| Launch card: failed snapshot | [preview-safety-card-failed.png](preview-safety-card-failed.png) |
+| ABOUT | [preview-about.png](preview-about.png) |
+| ABOUT: reboot blocked | [preview-about-blocked.png](preview-about-blocked.png) |
+| ABOUT: reboot confirmation | [preview-reboot-draft.png](preview-reboot-draft.png) |
 
-The HOME images ([preview-healthy.png](preview-healthy.png),
+The VITALS images ([preview-healthy.png](preview-healthy.png),
 [preview-vitals-plugins.png](preview-vitals-plugins.png), and
 [preview-vitals-plugins-warning.png](preview-vitals-plugins-warning.png)) are
 referenced by the project `README.md`.

@@ -5,11 +5,11 @@ its toolchain assumptions, its docs, and its safety rules.
 
 ## What this project is
 
-COCKPIT is one userland PS Vita app: the HOME dashboard plus the PLUGINS
-transaction manager. It ships no system plugin, kernel plugin, FTP server, Quick
-Menu panel, RCC/PAF payload, or clock bridge (D99). The VPK contains
-`eboot.bin` and `sce_sys/` only, and the app never adds a COCKPIT line to
-`config.txt`.
+COCKPIT is one userland PS Vita app: a taiHEN `config.txt` plugin manager first,
+with the VITALS system dashboard as its second tab and ABOUT as its third. It
+ships no system plugin, kernel plugin, FTP server, Quick Menu panel, RCC/PAF
+payload, or clock bridge (D99). The VPK contains `eboot.bin` and `sce_sys/`
+only, and the app never adds a COCKPIT line to `config.txt`.
 
 The product rule is that **every number on screen is real**. A value the
 platform cannot report renders `--` or `N/A`, never a guess, a stale value, or a
@@ -31,10 +31,12 @@ repository, where `.gitignore` would not see it.
 2. [`docs/PROJECT.md`](docs/PROJECT.md) — scope, status, roadmap, hardware handoff.
 3. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — layers, port, module contracts.
 4. [`docs/DESIGN.md`](docs/DESIGN.md) — visual language and layout.
-5. [`docs/DECISIONS.md`](docs/DECISIONS.md) — numbered decisions, including D99-D103.
-6. [`docs/threads/2026-11-08-core-cpu.md`](docs/threads/2026-11-08-core-cpu.md)
-   and [`docs/reviews/2026-11-08-core-cpu/report.md`](docs/reviews/2026-11-08-core-cpu/report.md)
-   for the latest work and its open findings.
+5. [`docs/DECISIONS.md`](docs/DECISIONS.md) — numbered decisions, including D99-D105.
+6. [`docs/threads/2026-11-09-plugin-manager-first.md`](docs/threads/2026-11-09-plugin-manager-first.md)
+   for the current work and its open hardware checks. The CPU thread and review
+   under `docs/threads/2026-11-08-core-cpu.md` and
+   [`docs/reviews/2026-11-08-core-cpu/report.md`](docs/reviews/2026-11-08-core-cpu/report.md)
+   remain the record for b156.
 
 ## Target and identity
 
@@ -55,7 +57,7 @@ export PATH="$VITASDK/bin:$PATH"
 ./build.sh                 # default UNSAFE eboot
 ./build.sh --safe          # restricted eboot, -safe artifact
 ./tools/test/run.sh        # host tests: metrics + editor + UI
-./tools/preview/run.sh     # 40 PNG scenes in build/preview/
+./tools/preview/run.sh     # 54 PNG scenes in build/preview/
 ./send.sh <vita-ip>        # uploads the newest VPK over FTP
 ```
 
@@ -191,12 +193,14 @@ PY
 
 A job is not done until the build, tests, previews, docs, and README agree.
 
-## Current state (2026-11-08)
+## Current state (2026-11-10)
 
-- Artifact: `build/cockpit-v01.00-b156.vpk`, 132,734 bytes, SHA-256
-  `84c9d16c8c10d5c8ad918ff5a5177041780884e93829e3a1b5cf991ff0b6335c`.
-- The user reports b150 works on the 3.65 console. b156 adds the CORE CPU
-  readout and the review fixes and has not been run on hardware yet.
-- Review items #2 (per-field `CTX/WAKE` validity), #3 (CPU `--` formatter tests
-  and preview scenes), and #5 (unused mask/hook) are closed. The one-sided
-  idle-clock guard is documented and deferred to the hardware checklist (#1).
+- Artifact: `build/cockpit-v01.01-b162.vpk`, 135,495 bytes, SHA-256
+  `eb878f15af5bb31a4bd43704c2cfd79e5e73bbaa485365230fa69a924068aaf1`.
+- GitHub release `v1.01` carries this VPK. The project is `built`, not
+  `verified`.
+- b150 is confirmed on the 3.65 console. b162 adds the plugin-manager-first tab
+  order, the launch safety card, and the ABOUT reboot gate; it has not run on
+  hardware yet.
+- The CORE idle-clock unit remains `[C]`; a coarser-than-microseconds counter is
+  caught only by the static-100 % hardware check.

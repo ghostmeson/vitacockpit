@@ -110,7 +110,7 @@ that exists but cannot be read shows its return code.
 
 Requires a **PS Vita on 3.65 with permanent Enso**. PSTV is not supported.
 
-1. Download `cockpit-v01.00-b156.vpk` from
+1. Download `cockpit-v01.01-b162.vpk` from
    [Releases](https://github.com/ghostmeson/vitacockpit/releases/latest).
 2. Copy it to `ux0:data`.
 3. In VitaShell, select the VPK and press Cross.
@@ -159,8 +159,8 @@ Upload it to a Vita running VitaShell's FTP server:
 The policy layer is host-testable, so most of the app runs without a console:
 
 ```sh
-./tools/test/run.sh        # 1,412 checks: metrics, editor, UI
-./tools/preview/run.sh     # 40 PNG scenes in build/preview/
+./tools/test/run.sh        # 1,474 checks: metrics, editor, UI
+./tools/preview/run.sh     # 54 PNG scenes in build/preview/
 ```
 
 The tests link the real `src/core/` against a fake platform port. The preview
@@ -174,8 +174,8 @@ permission are hardware-only claims.
 src/core/         policy: metrics, history, plugins, editor, input
 src/platform/     the Vita SDK adapter, the only device sampler
 src/app/          app shell, pad adapter
-src/panels/       HOME panels and the PLUGINS ledger
-src/ui/           header, tabs, dock flow, pure formatters
+src/panels/       VITALS panels and the PLUGINS ledger
+src/ui/           header, tabs, launch card, ABOUT, dock flow, pure formatters
 src/gfx/          vita2d renderer adapter
 tools/test/       host test suites and the fake platform
 tools/preview/    software vita2d shim and scene renderer
@@ -190,15 +190,17 @@ the composition root, and `src/gfx/draw.c` the only renderer caller. See
 
 ## Status
 
-Build **b156** (`v01.00`), 132,734 bytes, SHA-256
-`84c9d16c8c10d5c8ad918ff5a5177041780884e93829e3a1b5cf991ff0b6335c`.
+Build **b162** (`v01.01`), 135,495 bytes, SHA-256
+`eb878f15af5bb31a4bd43704c2cfd79e5e73bbaa485365230fa69a924068aaf1`.
+Published as [release v1.01](https://github.com/ghostmeson/vitacockpit/releases/tag/v1.01).
 
-- 1,412 host checks pass; 40 preview scenes render; default and `--safe` builds
+- 1,474 host checks pass; 54 preview scenes render; default and `--safe` builds
   are clean.
 - The VPK contains `eboot.bin` and `sce_sys/` only.
-- b150 is confirmed on a 3.65 Enso console. **b156 has not run on hardware yet.**
-  It adds the CORE CPU readout. If the idle clock turns out to be coarser than
-  microseconds, CORE renders `--` rather than a wrong percentage.
+- b150 is confirmed on a 3.65 Enso console. **b162 has not run on hardware yet.**
+  It adds the plugin-manager-first tabs, the launch safety card, and the ABOUT
+  reboot gate. If the idle clock turns out to be coarser than microseconds,
+  CORE renders `--` rather than a wrong percentage.
 - Firmware may read 3.74 on a 3.65 console: the version string is spoofed, and
   the panel shows what the API returns.
 

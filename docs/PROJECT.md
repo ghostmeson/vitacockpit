@@ -6,10 +6,11 @@ What COCKPIT is, what it is not, and where it stands.
 
 ## 1. Purpose
 
-A live readout of the machine it runs on, plus one screen where the taiHEN
-plugin list can be changed. It is an instrument panel first: every number it
-shows is real, and the plugin manager exists because a readout you cannot act
-on becomes an inventory.
+A taiHEN `config.txt` plugin manager first, with a live machine readout behind
+it. PLUGINS is the landing screen: it lists the active config, shows what is
+running now and what will run after the next boot, and stages enables and
+disables as one reviewed batch. VITALS is the instrument panel; ABOUT
+identifies the build and offers the guarded reboot.
 
 The product rule is that **every number on screen is real**. A fabricated
 metric would poison the credibility of the whole panel, so anything the
@@ -26,14 +27,11 @@ edits lines that are already there.
 
 | Region | Contents |
 |---|---|
-| HOME header | wordmark, clock, HOME/PLUGINS tabs |
-| CORE | per-core CPU load, active-core average, context-switch/wakeup rates, 20 s CPU-load trace; free user / CDRAM / physical-contiguous pools |
-| STORAGE | `ux0:`, `uma0:` used and total, with the unit chosen from each volume's size (GB or MB), segmented meters |
-| POWER | battery percent, charging state, temperature, voltage, cycles, health |
-| SYSTEM | firmware string, app run time, device model |
-| PLUGINS summary | a full-width block below both columns: loaded count, group counts, and a config warning |
-| PLUGINS tab | the full config ledger with a staged working set, an inline transaction dock, launch-set and next-boot badges, split rockers, the two restore previews, contextual last-write undo, and the config snapshots |
-| FRAME | measured FPS, frame time, 20 s trace |
+| Header | wordmark, clock, PLUGINS / VITALS / ABOUT tabs |
+| PLUGINS (first tab) | the full config ledger with a staged working set, an inline transaction dock, launch-set and next-boot badges, split rockers, the two restore previews, contextual last-write undo, and the config snapshots |
+| Launch safety card | the active config path, what this session backed up, why editing through COCKPIT is safer, and the real locked/no-config branches |
+| VITALS (second tab) | CORE: per-core CPU load, active-core average, context-switch/wakeup rates, 20 s CPU-load trace, free user / CDRAM / physical-contiguous pools. STORAGE: `ux0:`, `uma0:` used and total, with the unit chosen from each volume's size. POWER: percent, charging state, temperature, voltage, cycles, health. SYSTEM: firmware string, app run time, device model. PLUGINS summary: loaded count, group counts, config warning. FRAME: measured FPS, frame time, 20 s trace |
+| ABOUT (third tab) | product name, a short description, the release label and build number, the guarded REBOOT action, and the console's real power-off path |
 
 The wall clock and the wordmark are header chrome, not a panel, so identity
 appears exactly once on screen.
@@ -54,8 +52,10 @@ appears exactly once on screen.
   names only.
 - Manual editing of comments or sections. A toggle changes only `#` markers; a
   restore replaces the file with the snapshot bytes.
-- A third tab, plugin presets, a line-level diff, or a draft that survives a
+- A fourth tab, plugin presets, a line-level diff, or a draft that survives a
   restart. The restore preview is plugin-level and replaces the whole file.
+- A POWER OFF button. Userland cannot request a shutdown; ABOUT prints the
+  console's real hold-power path instead.
 
 ### Later
 
@@ -71,7 +71,7 @@ these are additive, not invasive. See §7.
   so the app ships `UNSAFE` (D42); `build.sh --safe` builds the restricted
   variant.
 - No hardware is reachable from the current development environment. The b13
-  run in §5 is the only dashboard evidence; b156 has not run on the console.
+  run in §5 is the only dashboard evidence; b162 has not run on the console.
 - The product is one app. A plugin manager that rewrites `config.txt` is enough
   surface; adding a resident process or a boot hook increased the failure cost
   without improving the manager.
@@ -92,11 +92,19 @@ builds the restricted eboot. On the Vita, open VitaShell, press Select to start
 its FTP server, then run `send.sh` with the address it shows.
 
 Scroll the panel area with the D-pad or the sticks. The header stays pinned; on
-HOME the FRAME strip is pinned too, while PLUGINS uses the bottom of the screen
+VITALS the FRAME strip is pinned too, while PLUGINS uses the bottom of the screen
 for its transaction dock. A thin bar on the right shows position. Press L or R to
-switch between HOME and PLUGINS. The HOME `PLUGINS` block is read-only: it counts
-the launch set, and it sits below the fold, so scroll down to reach it. Pending
-edits are shown only on the PLUGINS tab that made them.
+step PLUGINS, VITALS, ABOUT; the step wraps at either end. The VITALS `PLUGINS`
+block is read-only: it counts the launch set, and it sits below the fold, so
+scroll down to reach it. Pending edits are shown only on the PLUGINS tab that
+made them.
+
+Every launch opens on the safety card, over PLUGINS. It names the active
+`config.txt`, the snapshot this session wrote, and why editing through COCKPIT is
+safer than a manual edit. Cross or Circle acknowledges it; no acknowledgement is
+stored. ABOUT carries the version and build, the guarded REBOOT, and the real
+power-off path. The reboot confirmation re-checks the battery and repair gates
+every frame, and a staged batch is discarded only after the confirmation says so.
 
 On PLUGINS, Cross stages the selected row in memory. It does not write
 `config.txt` and does not open a dialog. The row title, the split rocker, the
@@ -147,7 +155,7 @@ makes "which build is on the Vita?" answerable.
 The artifact is named:
 
 ```
-build/cockpit-v<version>-b<build>.vpk        e.g. cockpit-v01.00-b156.vpk
+build/cockpit-v<version>-b<build>.vpk        e.g. cockpit-v01.01-b162.vpk
 ```
 
 | Part | Source | Changes |
@@ -186,8 +194,8 @@ community knowledge.
 
 | Area | Status |
 |---|---|
-| Builds and packages | `[V]` clean default and safe builds, 0 compiler warnings; `cockpit-v01.00-b156.vpk` is 132,734 bytes, SHA-256 `84c9d16c8c10d5c8ad918ff5a5177041780884e93829e3a1b5cf991ff0b6335c`; the VPK contains `eboot.bin` and `sce_sys/` only; the unstripped ELF is kept as `build/cockpit` |
-| Host tests (sampling, plugin model, draft/commit, restore, undo, input, dock flow) | `[V]` `tools/test/run.sh`, 161 metrics + 1,208 editor + 43 UI checks, 0 failures |
+| Builds and packages | `[V]` clean default and safe builds, 0 compiler warnings; `cockpit-v01.01-b162.vpk` is 135,495 bytes, SHA-256 `eb878f15af5bb31a4bd43704c2cfd79e5e73bbaa485365230fa69a924068aaf1`; the VPK contains `eboot.bin` and `sce_sys/` only; the unstripped ELF is kept as `build/cockpit` |
+| Host tests (sampling, plugin model, draft/commit, restore, undo, input, dock flow, launch card, ABOUT text) | `[V]` `tools/test/run.sh`, 161 metrics + 1,247 editor + 66 UI checks, 0 failures |
 | Plugin list (`ux0:` first, `ur0:` fallback) | `[V]` host harness keeps a 19-entry real config in full and groups it as KERNEL 9 / SYSTEM 8 / SYSTEM APPS 1 / ALL TITLES 1; host tests cover BOM, commented entries, long names, section mapping, priority merge, the 64-entry ceiling, full-path duplicate rows, `*!` halts, lock/warn policy, the two snapshots, and the exact `#` edit |
 | Staged transaction and restore | `[V]` host tests cover stage/discard/commit, one `.undo` per batch, the stale-file refusal, the plugin-level restore diff, `WILL REMOVE`, the locked-drop and no-change refusals, the read-only refusal for an unreadable or truncated live config, the `*!` halt before a protected path, the undo repair after an unrecovered write, the removed-path pending truth, the failed-save `.undo` preservation, the saved/last-write truth table, focus and the battery gate. `[C]` the end-to-end flow is unverified on hardware. |
 | Memory, CPU, storage, power, identity APIs declared in SDK | `[V]` header inspection; `sceKernelGetSystemInfo` is a userland `SceLibKernel` export |
@@ -196,12 +204,14 @@ community knowledge.
 | `sceIoDevctl("ux0:", 0x3001, …)` command | `[V]` `psp2/io/devctl.h` demonstrates it verbatim |
 | Storage result unit (bytes) | `[C]` — the devctl byte unit remains unconfirmed |
 | Device model codes | `[V]` `psp2common/kernel/sysmem.h` |
-| Screen layout and typography | `[V]` host preview render, 40 states, busiest 5,429 draw calls against the 8,000 budget; header slots, rows, preview list, every dock state with its pressable button model, the HOME-only FRAME strip, the off-left/on-right rocker, the 12 px dock padding, and CORE/POWER outlines (D53, D54, D77, D78, D81, D83, D99) |
-| Renders on hardware | `[V]` 2026-11-02 (b13): text, memory, power, identity and frame all draw on the console. 2026-11-04 (b124): the app and the PLUGINS screen draw. 2026-11-08: the user reports b150 runs on the console; CORE was memory-only. b156 adds the CPU readout and the review fixes and has not run on hardware yet. |
+| Screen layout and typography | `[V]` host preview render, 54 states, busiest 6,712 draw calls against the 8,000 budget; a three-tab header, the VITALS-only FRAME strip, the launch card, ABOUT, the reboot confirmation, the off-left/on-right rocker, the 12 px dock padding, and CORE/POWER outlines (D53, D54, D77, D78, D81, D83, D99) |
+| Launch card, three tabs, ABOUT | `[V]` host tests cover tab wrap, ABOUT inertness, the four card bodies, the reboot gate, and the confirmation copy; the preview renders the success, failed-snapshot, no-config, and unreadable card states, ABOUT allowed/blocked/unknown, and the four confirmation states. `[C]` none of the new screens has run on the console. |
+| Renders on hardware | `[V]` 2026-11-02 (b13): text, memory, power, identity and frame all draw on the console. 2026-11-04 (b124): the app and the PLUGINS screen draw. 2026-11-08: the user reports b150 runs on the console; CORE was memory-only. b162 adds the plugin-manager-first tabs, the launch card, and the ABOUT reboot gate and has not run on hardware yet. |
 | b74 startup crash | `[V]` C2-12828-1; the core names `COCKPIT01`, stop reason `0x30003`, PC `0`, and r0 `0x812c0ae4` (`&reading` at `platform_read_clocks+0x2e`). The weak import and the whole clock path are gone (D99). |
 | Config write path | `[C]` the adapter's rename-away swap and live read-back are implemented and build; host tests exercise the same transaction in the fake, not the SDK calls, and the target's rename semantics are unverified. A failure names the stage (`OPEN`, `DATA`, `CLOSE`, `VERIFY`, `MOVE`, `RENAME`, `READBACK`, `RESTORE`, `UNDO`). |
 | Restore reads | `[V]` host tests read `.original`, `.session`, and `.undo` through the same port; `[C]` the SDK file reads are not exercised on hardware. |
-| Cold reset | `[V]` `scePowerRequestColdReset` is declared in `psp2/power.h`; `[C]` that an UNSAFE userland eboot may perform it on 3.65 Enso |
+| Cold reset | `[V]` `scePowerRequestColdReset` is declared in `psp2/power.h`; `[C]` that an UNSAFE userland eboot may perform it on 3.65 Enso from the ABOUT confirmation |
+| Power-off instruction | `[V]` the official Vita guide: hold the power button for two seconds, then choose Power Off; `[C]` the exact on-console path on this 3.65 Enso unit |
 | STORAGE reads | `[V]` both volumes report on hardware under `UNSAFE` (D42); `ux0:` also works on the safe build via `sceAppMgrGetDevInfo` (D38) |
 | Behaviour not listed above | unverified |
 
@@ -220,39 +230,41 @@ undo repair, the removed-path pending truth, the failed-save `.undo`
 preservation, interrupted-swap recovery, the ux0-unreadable rule, the exact `#`
 edit, the write transaction and its restore path, the shared draft/restore
 commit protocol, the dock state/action/focus
-policy, the navigation routing and SAVE/CONFIRM mapping, and the input reducer.
-The host preview (`tools/preview/run.sh`) renders the shipped composition against
-the same fake, 40 states with the busiest at 5,429 draw calls. Neither proves
+policy, the navigation routing and SAVE/CONFIRM mapping, the input reducer, the
+three-tab wrap, the launch-card bodies, the shared reboot gate, and the ABOUT
+confirmation copy. The host preview (`tools/preview/run.sh`) renders the shipped
+composition against
+the same fake, 54 states with the busiest at 6,712 draw calls. Neither proves
 anything about the device: every reading in them is synthetic.
 
 ### Hardware handoff
 
-The next action is to flash `build/cockpit-v01.00-b156.vpk` and run this
+The next action is to flash `build/cockpit-v01.01-b162.vpk` and run this
 checklist on the 3.65 Enso console. The project stays `built` until the user
 records the evidence; no item below is claimed by the host suite.
 
-1. Flash the VPK and launch COCKPIT. Confirm the header reads `USING`, the
-   counts, and the prompt; no `ROWS` / `LOADED` / `CROSS CHANGE` text remains.
-   Confirm FRAME is visible on HOME and absent on PLUGINS.
-2. Confirm CORE shows four CPU percentages, the active-core average, the
+1. Flash the VPK and launch COCKPIT. Confirm PLUGINS is the first tab and the
+   landing screen, the safety card appears after the scan, and Cross or Circle
+   dismisses it. Confirm the card's snapshot sentence matches the files present;
+   if the session snapshot failed, the card must say so.
+2. Confirm L/R wraps PLUGINS -> VITALS -> ABOUT -> PLUGINS and back. Confirm the
+   D-pad and the stick on ABOUT change nothing.
+3. VITALS: confirm four CPU percentages, the active-core average, the
    context-switch/wakeup rates, the three memory pools, and the CPU-load trace.
-   Confirm no ARM/GPU/BUS row exists. A failed CPU or memory read leaves its
-   trace alone and renders `--`; a frozen or regressed cumulative counter renders
-   `--` for that rate only, never `0/S`. A static CPU reading near 100 % at idle
-   means `idleClock` is coarser than microseconds; record it and treat CPU as
-   unavailable. If the readout moves with load, the unit assumption is usable.
-3. Confirm STORAGE shows `ux0:` used/total and `uma0:` as absent or its real
+   Confirm no ARM/GPU/BUS row exists. A failed read renders `--`; a frozen or
+   regressed counter renders `--` for that rate only, never `0/S`. A static CPU
+   reading near 100 % at idle means `idleClock` is coarser than microseconds;
+   record it and treat CPU as unavailable.
+4. Confirm STORAGE shows `ux0:` used/total and `uma0:` as absent or its real
    size; POWER shows percent, state, temperature, voltage, cycles, and health.
-4. Confirm the rows have no dot, the green-dim active titles, the split rockers,
+5. Confirm the rows have no dot, the green-dim active titles, the split rockers,
    the badges, and the selection wash. Confirm OFF is the left red half and ON
    is the right green half. Confirm the dock actions are pressable slabs: a
    yellow `CONFIRM & REBOOT`, dark secondary buttons with a bottom ledge, and a
-   white outline on the focused action. Confirm the dock's top and bottom inner
-   padding look even.
-5. Stage an enable and a disable. Confirm `config.txt` is unchanged and no
+   white outline on the focused action.
+6. Stage an enable and a disable. Confirm `config.txt` is unchanged and no
    `.undo` exists yet; the dock shows `DRAFT - NOT WRITTEN` and the names.
-6. Discard. Confirm the file is unchanged and the dock returns to idle or the
-   saved state.
+   Discard and confirm the file is unchanged.
 7. Stage again and `CONFIRM & REBOOT`. Confirm one `.undo` and one write, the
    reboot, and that the toggles persist after boot.
 8. Stage and `SAVE, REBOOT LATER`. Confirm the file is written, the dock shows
@@ -260,18 +272,25 @@ records the evidence; no item below is claimed by the host suite.
    applies the change.
 9. Preview and confirm `RESTORE ORIGINAL` and `RESTORE PREVIOUS SESSION`.
    Confirm the diff, the write, the reboot, and that `.undo` holds the
-   pre-restore file.
-10. Use `UNDO LAST WRITE`. Confirm the pre-batch file is restored and the `.undo`
-    is removed. If the dock still offers it after a reboot, that is the one-step
-    contextual undo; the app cannot distinguish a relaunch from a reboot.
-11. Test the battery gate below 20 % while not charging and with the power read
-    invalid. Confirm the save path is primary and `REBOOT NOW` is gated.
-12. Exercise the sticks and D-pad: sticks scroll the list and the preview, D-pad
-    selects, L/R switch tabs, Down enters the dock, Left/Right skips unavailable
-    actions, Circle returns.
-13. Check `config.txt.original`, `config.txt.session`, and `config.txt.undo`;
+   pre-restore file. Use `UNDO LAST WRITE`; confirm the pre-batch file returns
+   and the `.undo` is removed.
+10. Test the battery gate below 20 % while discharging and with the power read
+    invalid. Confirm the save path stays primary, the dock's `REBOOT NOW` is
+    gated, ABOUT's REBOOT is dimmed with the reason, and no confirmation opens.
+11. ABOUT: confirm the version reads `1.01` and the build matches the VPK. With
+    no pending work, Cross opens the confirmation; Cross reboots, Circle
+    cancels. Confirm the post-request notice and the failure copy.
+12. Stage a batch, switch to ABOUT, and press Cross. Confirm the title is
+    `REBOOT AND DISCARD`, the body says the batch will be discarded and points
+    to PLUGINS, and confirming reboots without changing `config.txt`.
+13. If a repair state can be produced, confirm ABOUT's REBOOT is blocked with
+    `REPAIR WITH UNDO FIRST` or `RECOVERY FAILED`, not a confirmation.
+14. Confirm the power-off path: hold the power button for two seconds, then
+    choose Power Off. If the screen is frozen, hold for five seconds. Record
+    which path the console actually shows.
+15. Check `config.txt.original`, `config.txt.session`, and `config.txt.undo`;
     confirm no `.new` / `.old` leftovers and no new `boot_config.txt*` files.
-14. Record the exact `WRITE FAILED <stage>` if a write fails and the cold-reset
+16. Record the exact `WRITE FAILED <stage>` if a write fails and the cold-reset
     result. Keep the project `built` until the evidence is complete.
 
 The remaining hardware-only claims are the target's `sceIoRename` / replace
@@ -318,7 +337,7 @@ Panels degrade, they do not crash.
 
 | Step | Adds | Needs |
 |---|---|---|
-| v1 | the dashboard and the plugin manager | b156 builds and is host-tested; the hardware checklist above is pending |
+| v1 | the plugin manager, VITALS, and ABOUT | b162 builds and is host-tested; the hardware checklist above is pending |
 | v2 | app inventory, per-title storage | `sceAppMgrGetAppInfo`, directory walk of `ux0:app` |
 | v3 | network status | `SceNetCtl` in the app process, not in a shell plugin |
 | v4 | theme switching, a second visual language | a theme abstraction in `gfx/theme` |
