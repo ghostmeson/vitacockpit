@@ -41,6 +41,7 @@ SRC="$ROOT/src"
   "$SRC/panels/system.c" \
   "$SRC/ui/core_text.c" \
   "$SRC/ui/header.c" \
+  "$SRC/ui/launch_card.c" \
   "$SRC/ui/modal.c" \
   "$SRC/ui/plugin_flow.c" \
   "$SRC/ui/plugin_nav.c" \

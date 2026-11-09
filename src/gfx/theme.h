@@ -164,6 +164,13 @@ void theme_sparkline(const History *hist, float x, float y, float w,
 /* Yellow/black hazard band. Only on a real fault. */
 void theme_hazard(float x, float y, float w, float h);
 
+/*
+ * One dark pass over the app behind a modal. The renderer blends the alpha, so
+ * the screen stays recognizable but reads as unavailable while the card or a
+ * confirmation owns input.
+ */
+void theme_scrim(float x, float y, float w, float h);
+
 /* Interference sweep: proves the render loop is running. */
 void theme_sweep(float x, float y, float w, float h, float t);
 

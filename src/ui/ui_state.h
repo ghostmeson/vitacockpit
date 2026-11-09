@@ -22,11 +22,13 @@ typedef enum {
 typedef enum {
     UI_MODAL_NONE = 0,
     /*
-     * The only interrupt left. Everything a dock action can recover from is
-     * reported inline; this panel is reserved for a write whose original could
-     * not be put back (R38).
+     * The error panel is reserved for a write whose original could not be put
+     * back (R38). The safety card is the launch gate, and the reboot panel is
+     * the one choice modal: Cross confirms, Circle cancels.
      */
     UI_MODAL_ERROR,
+    UI_MODAL_SAFETY,
+    UI_MODAL_REBOOT,
 } UiModal;
 
 typedef struct {

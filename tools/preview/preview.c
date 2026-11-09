@@ -15,6 +15,8 @@
 #include "gfx/layout.h"
 #include "panels/plugins.h"
 #include "panels/registry.h"
+#include "ui/launch_card.h"
+#include "ui/modal.h"
 #include "ui/plugin_flow.h"
 #include "fake_platform.h"
 
@@ -327,6 +329,18 @@ int main(int argc, char **argv)
 
     if (!render(dir, "preview-healthy.png", 2.5f, &ui))
         return 1;
+
+    /* The launch safety card is the first screen of the shipped app. */
+    LaunchCard card;
+    ui.tab = UI_TAB_PLUGINS;
+    ui.selection = 0;
+    launch_card_build(&card);
+    modal_open_safety(&ui, &card);
+    if (!render(dir, "preview-safety-card.png", 2.6f, &ui))
+        return 1;
+    ui.modal = UI_MODAL_NONE;
+
+    reset_scene(&ui);
 
     /* Low battery while discharging: the real alert path, not a forced flag. */
     fake_set_power(14, 0);

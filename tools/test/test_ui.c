@@ -42,6 +42,22 @@ static void test_nav_modal(void)
     CHECK(plugin_nav_action(&ui, INPUT_UP, 9, 0) == PLUGIN_NAV_NONE);
     CHECK(plugin_nav_action(&ui, INPUT_DOWN, 9, 0) == PLUGIN_NAV_NONE);
     CHECK(plugin_nav_action(&ui, INPUT_OPTIONS, 9, 0) == PLUGIN_NAV_NONE);
+
+    /* The safety card is acknowledged by either button. */
+    ui.modal = UI_MODAL_SAFETY;
+    CHECK(plugin_nav_action(&ui, INPUT_ACCEPT, 9, 0) ==
+          PLUGIN_NAV_MODAL_DISMISS);
+    CHECK(plugin_nav_action(&ui, INPUT_CANCEL, 9, 0) ==
+          PLUGIN_NAV_MODAL_DISMISS);
+    CHECK(plugin_nav_action(&ui, INPUT_TAB_RIGHT, 9, 0) == PLUGIN_NAV_NONE);
+
+    /* The reboot panel is the one real choice. */
+    ui.modal = UI_MODAL_REBOOT;
+    CHECK(plugin_nav_action(&ui, INPUT_ACCEPT, 9, 0) ==
+          PLUGIN_NAV_MODAL_CONFIRM);
+    CHECK(plugin_nav_action(&ui, INPUT_CANCEL, 9, 0) ==
+          PLUGIN_NAV_MODAL_CANCEL);
+    CHECK(plugin_nav_action(&ui, INPUT_LEFT, 9, 0) == PLUGIN_NAV_NONE);
 }
 
 static void test_nav_surfaces(void)

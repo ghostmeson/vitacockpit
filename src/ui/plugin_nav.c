@@ -19,8 +19,18 @@ PluginNavAction plugin_nav_action(const UiState *ui, InputEvent event,
         return PLUGIN_NAV_NONE;
 
     if (ui->modal != UI_MODAL_NONE) {
-        /* ERROR is an acknowledgement, not a choice: Cross and Circle both
-         * close it. */
+        /*
+         * The reboot panel is the only modal with two outcomes. Every other
+         * modal is an acknowledgement: Cross and Circle both close it.
+         */
+        if (ui->modal == UI_MODAL_REBOOT) {
+            if (event == INPUT_ACCEPT)
+                return PLUGIN_NAV_MODAL_CONFIRM;
+            if (event == INPUT_CANCEL)
+                return PLUGIN_NAV_MODAL_CANCEL;
+            return PLUGIN_NAV_NONE;
+        }
+
         return (event == INPUT_ACCEPT || event == INPUT_CANCEL)
                    ? PLUGIN_NAV_MODAL_DISMISS
                    : PLUGIN_NAV_NONE;

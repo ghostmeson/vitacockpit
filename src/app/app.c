@@ -15,6 +15,7 @@
 #include "gfx/layout.h"
 #include "panels/plugins.h"
 #include "panels/registry.h"
+#include "ui/launch_card.h"
 #include "ui/modal.h"
 #include "ui/plugin_flow.h"
 #include "ui/plugin_nav.h"
@@ -362,6 +363,15 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
 {
     switch (action) {
     case PLUGIN_NAV_MODAL_DISMISS:
+    case PLUGIN_NAV_MODAL_CANCEL:
+        close_modal(ui);
+        break;
+
+    case PLUGIN_NAV_MODAL_CONFIRM:
+        /*
+         * The reboot request is wired by the ABOUT unit. Until then, a confirm
+         * closes the panel; U4 replaces this with the gated request.
+         */
         close_modal(ui);
         break;
 
@@ -459,6 +469,15 @@ int app_run(void)
     ui.tab = UI_TAB_PLUGINS;
     ui.selection = first_row();
     ui.modal = UI_MODAL_NONE;
+
+    /*
+     * The safety card is the first screen. It is composed after the scan and
+     * snapshot attempt, so every sentence describes what this launch actually
+     * did, and it owns input until the user acknowledges it.
+     */
+    LaunchCard card;
+    launch_card_build(&card);
+    modal_open_safety(&ui, &card);
 
     InputState input;
     input_reset(&input);

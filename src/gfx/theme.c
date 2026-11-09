@@ -236,6 +236,15 @@ void theme_hazard(float x, float y, float w, float h)
     }
 }
 
+void theme_scrim(float x, float y, float w, float h)
+{
+    /*
+     * The alpha is the mechanism: an opaque black pass would hide the app,
+     * while this dims it enough that the card reads as the only live surface.
+     */
+    draw_rect(x, y, w, h, COCKPIT_RGBA8(0x00, 0x00, 0x00, 0xC0));
+}
+
 void theme_sweep(float x, float y, float w, float h, float t)
 {
     float p = fmodf(t, SWEEP_PERIOD) / SWEEP_PERIOD;
