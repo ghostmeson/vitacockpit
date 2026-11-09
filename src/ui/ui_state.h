@@ -3,7 +3,7 @@
 
 /*
  * The screen's navigation state. The app owns it; screen_draw and the panels
- * read it. Keeping it out of the panels is what lets HOME and PLUGINS keep
+ * read it. Keeping it out of the panels is what lets VITALS and PLUGINS keep
  * independent scroll positions (KTD1).
  */
 

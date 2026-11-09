@@ -642,7 +642,7 @@ static void parse_text(EditorState *e, const char *text, int len)
                 if (content_end - path_start >= PLUGIN_PATH_MAX) {
                     /*
                      * One long path must not make the whole file read-only.
-                     * Skip the entry and warn, exactly as the HOME parser does
+                     * Skip the entry and warn, exactly as the VITALS parser does
                      * (D65, D71).
                      */
                     l->kind = EDITOR_LINE_COMMENT;

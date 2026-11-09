@@ -6,13 +6,13 @@
 #include "gfx/font.h"
 
 /*
- * PLUGINS — the activated-plugin summary, on HOME.
+ * PLUGINS — the activated-plugin summary, on VITALS.
  *
  * This block replaces the header status line (D63, superseded by D67). It
  * reports the launch set: the plugins taiHEN actually loaded, grouped by the
  * load target that named them.
  *
- * HOME shows only what is running. A pending edit has not taken effect yet and
+ * VITALS shows only what is running. A pending edit has not taken effect yet and
  * belongs to the PLUGINS tab that made it, so the block carries no pending
  * token (D68). The block does not list every plugin either; that is the
  * ledger's job. Here it answers one question — how many plugins are online, and

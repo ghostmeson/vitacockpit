@@ -307,7 +307,8 @@ int plugin_flow_action_available(PluginFlowState state,
                 state == PLUGIN_FLOW_LAST_WRITE) &&
                editor_undo_available();
     case PLUGIN_DOCK_REBOOT:
-        return state == PLUGIN_FLOW_SAVED && !battery_blocked;
+        return state == PLUGIN_FLOW_SAVED &&
+               plugin_flow_reboot_block_reason() == NULL;
     case PLUGIN_DOCK_RESTORE_ORIGINAL:
         return (state == PLUGIN_FLOW_IDLE || state == PLUGIN_FLOW_DRAFT) &&
                editor_can_restore() &&

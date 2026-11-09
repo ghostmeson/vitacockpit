@@ -43,6 +43,7 @@ set(COCKPIT_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 execute_process(
   COMMAND "${CMAKE_SOURCE_DIR}/tools/gen-build-id.sh"
           "${COCKPIT_GENERATED_DIR}/cockpit_build.h" "${COCKPIT_SAFE}"
+          "${COCKPIT_BUILD}"
   RESULT_VARIABLE COCKPIT_ID_RESULT)
 if(NOT COCKPIT_ID_RESULT EQUAL 0)
   message(FATAL_ERROR "build identity generation failed")

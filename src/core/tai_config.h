@@ -13,7 +13,7 @@
  *
  * Keeping these here is what stops the two readers from disagreeing about a
  * section name, a plugin suffix, or a path key. The line models themselves stay
- * separate: HOME needs only the activated set, while PLUGINS needs offsets,
+ * separate: VITALS needs only the activated set, while PLUGINS needs offsets,
  * line endings, and reachability.
  */
 

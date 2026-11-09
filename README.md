@@ -110,7 +110,7 @@ that exists but cannot be read shows its return code.
 
 Requires a **PS Vita on 3.65 with permanent Enso**. PSTV is not supported.
 
-1. Download `cockpit-v01.01-b164.vpk` from
+1. Download `cockpit-v01.01-b166.vpk` from
    [Releases](https://github.com/ghostmeson/vitacockpit/releases/latest).
 2. Copy it to `ux0:data`.
 3. In VitaShell, select the VPK and press Cross.
@@ -159,7 +159,7 @@ Upload it to a Vita running VitaShell's FTP server:
 The policy layer is host-testable, so most of the app runs without a console:
 
 ```sh
-./tools/test/run.sh        # 1,481 checks: metrics, editor, UI
+./tools/test/run.sh        # 1,491 checks: metrics, editor, UI
 ./tools/preview/run.sh     # 51 PNG scenes in build/preview/
 ```
 
@@ -190,14 +190,14 @@ the composition root, and `src/gfx/draw.c` the only renderer caller. See
 
 ## Status
 
-Build **b164** (`v01.01`), 135,549 bytes, SHA-256
-`0df938415906463a8fc8f9dc252af56940e3b98136dd81c3d34ab96d3a7c057e`.
+Build **b166** (`v01.01`), 135,611 bytes, SHA-256
+`70e3d9acc5bfefc6b2cdf238ce69df9b463b973c6501df1a2443aba2a5c5fe87`.
 Published as [release v1.01](https://github.com/ghostmeson/vitacockpit/releases/tag/v1.01).
 
-- 1,481 host checks pass; 51 preview scenes render; default and `--safe` builds
+- 1,491 host checks pass; 51 preview scenes render; default and `--safe` builds
   are clean.
 - The VPK contains `eboot.bin` and `sce_sys/` only.
-- b150 is confirmed on a 3.65 Enso console. **b164 has not run on hardware yet.**
+- b150 is confirmed on a 3.65 Enso console. **b166 has not run on hardware yet.**
   It adds the plugin-manager-first tabs, the launch safety card, and the ABOUT
   reboot gate. If the idle clock turns out to be coarser than microseconds,
   CORE renders `--` rather than a wrong percentage.

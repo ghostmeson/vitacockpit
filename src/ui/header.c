@@ -22,7 +22,7 @@
 #define CLOCK_Y 23.0f
 
 /*
- * The band sits below the tabs, on the last line the header owns. HOME no
+ * The band sits below the tabs, on the last line the header owns. VITALS no
  * longer carries a summary here (D67), so a fault never competes with a count.
  */
 #define HAZARD_Y 48.0f
@@ -120,7 +120,7 @@ void header_draw(const UiState *ui)
     tabbar_draw(ui);
 
     /* D15: only ever drawn for a real fault, and it never reflows the layout.
-     * D67: HOME's plugin count lives in a panel, so nothing competes with it. */
+     * D67: VITALS's plugin count lives in a panel, so nothing competes with it. */
     if (g_metrics.alert)
         theme_hazard(0.0f, HAZARD_Y, (float)SCREEN_W, HAZARD_H);
 }

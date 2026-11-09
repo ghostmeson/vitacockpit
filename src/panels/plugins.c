@@ -33,7 +33,7 @@
 #define ROWS_TOP (PLUGIN_TOP + HEADER_LINE_H * HEADER_LINE_COUNT + SP_2)
 #define PLUGIN_EMPTY_H 30.0f
 
-/* PLUGINS owns the bottom of the screen: the frame strip is HOME-only. */
+/* PLUGINS owns the bottom of the screen: the frame strip is VITALS-only. */
 #define PLUGINS_VIEW_H (SCREEN_H - VIEW_Y - 8)
 
 /* The row control: a split rocker, not a labelled action box (R17). */

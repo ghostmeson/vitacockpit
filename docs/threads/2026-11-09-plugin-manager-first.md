@@ -36,10 +36,10 @@ identity and a guarded reboot, and publish the result as v1.01.
 
 ## Verification
 
-- `./tools/test/run.sh`: 1,481 checks, 0 failures.
+- `./tools/test/run.sh`: 1,491 checks, 0 failures.
 - `./tools/preview/run.sh`: 51 scenes, busiest 6,712 draw calls.
-- `build/cockpit-v01.01-b164.vpk`: 135,549 bytes, SHA-256
-  `0df938415906463a8fc8f9dc252af56940e3b98136dd81c3d34ab96d3a7c057e`.
+- `build/cockpit-v01.01-b166.vpk`: 135,611 bytes, SHA-256
+  `70e3d9acc5bfefc6b2cdf238ce69df9b463b973c6501df1a2443aba2a5c5fe87`.
 - The VPK contains `eboot.bin` and `sce_sys/` only.
 - GitHub release `v1.01` carries the VPK.
 

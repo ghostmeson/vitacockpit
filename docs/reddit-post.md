@@ -13,7 +13,7 @@ release and repo links point at the published repository.
    gallery post puts the images at the top, so drop the markers.
 3. The release and repo links below are live. Update them if the release tag
    changes.
-4. The build line is the b164 artifact. Rebuild and update it if the source
+4. The build line is the b166 artifact. Rebuild and update it if the source
    changes before posting.
 
 Keep the known-issues section last. It is the part that makes the rest
@@ -158,7 +158,7 @@ say `--` instead.
 
 ### Known warnings and issues
 
-- **Build 164 has not been run on my console yet.** b150 has, and it works. b164
+- **Build 164 has not been run on my console yet.** b150 has, and it works. b166
   adds the plugin-manager-first tabs, the launch card, and the ABOUT reboot gate.
   The new screens are the part I most want tested; if something looks wrong,
   please say which tab and what the screen showed.
@@ -187,12 +187,12 @@ say `--` instead.
 - **No network, audio, camera, or motion.** This is a plugin manager and a
   dashboard, nothing else.
 
-Built with VitaSDK 2026.08 and libvita2d. 1,481 host checks and 51 preview scenes
+Built with VitaSDK 2026.08 and libvita2d. 1,491 host checks and 51 preview scenes
 pass, and the VPK contains only `eboot.bin` and `sce_sys/`.
 
 **Download:** https://github.com/ghostmeson/vitacockpit/releases/tag/v1.01
 
 **Source:** https://github.com/ghostmeson/vitacockpit
 
-**Build:** `cockpit-v01.01-b164.vpk`, 135,549 bytes, SHA-256
-`0df938415906463a8fc8f9dc252af56940e3b98136dd81c3d34ab96d3a7c057e`
+**Build:** `cockpit-v01.01-b166.vpk`, 135,611 bytes, SHA-256
+`70e3d9acc5bfefc6b2cdf238ce69df9b463b973c6501df1a2443aba2a5c5fe87`

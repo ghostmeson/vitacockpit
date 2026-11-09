@@ -3,7 +3,7 @@
 
 #include "ui/ui_state.h"
 
-/* Tabs and the HOME summary, in the header's pinned chrome. */
+/* Tabs and the VITALS summary, in the header's pinned chrome. */
 void tabbar_draw(const UiState *ui);
 
 #endif

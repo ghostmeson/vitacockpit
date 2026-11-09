@@ -83,7 +83,7 @@ const char *plugins_desc_for(const char *name);
 void plugins_scan(void);
 
 /*
- * The HOME summary's counts. They are the launch list, which holds only paths
+ * The VITALS summary's counts. They are the launch list, which holds only paths
  * whose file exists on disk.
  */
 int plugins_count(void);

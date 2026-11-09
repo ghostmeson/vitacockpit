@@ -18,7 +18,7 @@ extern const Panel panel_frame;
  * scroll and clips to the viewport, so the canvas can be taller than the screen
  * without any panel knowing about scrolling.
  *
- * The editable plugin ledger lives on its own tab (D57). HOME carries a
+ * The editable plugin ledger lives on its own tab (D57). VITALS carries a
  * read-only summary block below both columns (D67).
  *
  *   CORE    552 x 210   hero, memory pools and trace

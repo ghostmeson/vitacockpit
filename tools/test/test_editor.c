@@ -3448,6 +3448,28 @@ static void test_reboot_gate(void)
     g_editor.too_large = 1;
     CHECK(plugin_flow_reboot_block_reason() == NULL);
     g_editor.too_large = 0;
+
+    /*
+     * The dock's REBOOT action must use the same gate as ABOUT: a repair state
+     * with a saved batch must not offer a reboot the other surface refuses.
+     */
+    fake_reset();
+    editor_scan();
+    int row = editor_row_for_path("ur0:tai/kubridge.skprx");
+    char err[96];
+    CHECK(stage_commit(row, 0, err, (int)sizeof(err)) == 0);
+    CHECK(plugin_flow_action_available(PLUGIN_FLOW_SAVED,
+                                       PLUGIN_DOCK_REBOOT) == 1);
+
+    g_editor.recover_failed = 1;
+    CHECK(plugin_flow_action_available(PLUGIN_FLOW_SAVED,
+                                       PLUGIN_DOCK_REBOOT) == 0);
+    g_editor.recover_failed = 0;
+
+    g_editor.write_unrecovered = 1;
+    CHECK(plugin_flow_action_available(PLUGIN_FLOW_SAVED,
+                                       PLUGIN_DOCK_REBOOT) == 0);
+    g_editor.write_unrecovered = 0;
 }
 
 static void test_about_reboot_text(void)
@@ -3530,6 +3552,23 @@ static void test_launch_card_copy(void)
     CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
     CHECK(!card_has(&card, "A SESSION SNAPSHOT WAS WRITTEN"));
 
+    /* .session written while .original could not be written. */
+    fake_reset();
+    fake_fail_write_path("ur0:tai/config.txt.original", 1);
+    editor_scan();
+    launch_card_build(&card);
+    CHECK(card_has(&card, "A SESSION SNAPSHOT WAS WRITTEN"));
+    CHECK(card_has(&card, "NO ORIGINAL SNAPSHOT IS PRESENT"));
+
+    /* .session fails while a readable .original exists. */
+    fake_reset();
+    editor_scan();
+    fake_fail_write_path("ur0:tai/config.txt.session", 1);
+    editor_scan();
+    launch_card_build(&card);
+    CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
+    CHECK(card_has(&card, "THE ORIGINAL IS PRESENT"));
+
     /* No live config and no snapshot: locked, no restore promise. */
     fake_reset();
     fake_remove_file("ur0:tai/config.txt");
@@ -3538,6 +3577,15 @@ static void test_launch_card_copy(void)
     CHECK(card_has(&card, "NO CONFIG WAS FOUND"));
     CHECK(card_has(&card, "NO SESSION SNAPSHOT WAS WRITTEN"));
     CHECK(!card_has(&card, "A RESTORE SNAPSHOT IS AVAILABLE"));
+
+    /* No live config but a readable snapshot: name the restore path. */
+    fake_reset();
+    editor_scan();
+    fake_remove_file("ur0:tai/config.txt");
+    editor_scan();
+    launch_card_build(&card);
+    CHECK(card_has(&card, "NO CONFIG WAS FOUND"));
+    CHECK(card_has(&card, "A RESTORE SNAPSHOT IS AVAILABLE IN PLUGINS"));
 
     /* Unreadable: locked, with its own body rather than "no config". */
     fake_reset();

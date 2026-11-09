@@ -7,11 +7,11 @@
 /*
  * The editable view of the active taiHEN config (D55, D56, D61-D75).
  *
- * core/plugins.c owns the launch-activated set used by HOME. This module owns
+ * core/plugins.c owns the launch-activated set used by VITALS. This module owns
  * the full line model used by PLUGINS: disabled entries, sections, `*!` halts,
  * the working text and its file baseline, staged toggles, the restore preview,
  * the snapshots, and the commit protocol. Keeping them separate is what stops
- * an edit from changing the HOME count before the reboot.
+ * an edit from changing the VITALS count before the reboot.
  */
 
 #define EDITOR_TEXT_MAX TAI_CONFIG_MAX

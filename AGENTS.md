@@ -195,11 +195,11 @@ A job is not done until the build, tests, previews, docs, and README agree.
 
 ## Current state (2026-11-10)
 
-- Artifact: `build/cockpit-v01.01-b164.vpk`, 135,549 bytes, SHA-256
-  `0df938415906463a8fc8f9dc252af56940e3b98136dd81c3d34ab96d3a7c057e`.
+- Artifact: `build/cockpit-v01.01-b166.vpk`, 135,611 bytes, SHA-256
+  `70e3d9acc5bfefc6b2cdf238ce69df9b463b973c6501df1a2443aba2a5c5fe87`.
 - GitHub release `v1.01` carries this VPK. The project is `built`, not
   `verified`.
-- b150 is confirmed on the 3.65 console. b164 adds the plugin-manager-first tab
+- b150 is confirmed on the 3.65 console. b166 adds the plugin-manager-first tab
   order, the launch safety card, and the ABOUT reboot gate; it has not run on
   hardware yet.
 - The CORE idle-clock unit remains `[C]`; a coarser-than-microseconds counter is
