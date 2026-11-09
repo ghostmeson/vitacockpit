@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cockpit_build.h"
 #include "core/input.h"
 #include "ui/core_text.h"
 #include "ui/plugin_nav.h"
@@ -194,6 +195,12 @@ static void test_tab_step_and_about(void)
     plugin_nav_apply_scroll(&ui, 1000.0f, 1.0f, 120, 400);
     CHECK(ui.vitals_scroll == 0.0f);
     CHECK(ui.plugins_scroll == 0.0f);
+
+    /* The package keeps ##.##; ABOUT drops the leading zero for the tag. */
+    CHECK(COCKPIT_PACKAGE_VERSION[0] == '0');
+    CHECK(strcmp(&COCKPIT_PACKAGE_VERSION[1], COCKPIT_RELEASE_VERSION) == 0);
+    CHECK(strlen(COCKPIT_BUILD_NUMBER) > 0);
+    CHECK(COCKPIT_SAFE == 0);
 }
 
 int main(void)

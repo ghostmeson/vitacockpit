@@ -10,6 +10,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT="${1:-$ROOT/build/preview}"
 
 mkdir -p "$OUT"
+mkdir -p "$ROOT/build/generated"
+"$ROOT/tools/gen-build-id.sh" "$ROOT/build/generated/cockpit_build.h" OFF >/dev/null
 
 CC="${CC:-cc}"
 SRC="$ROOT/src"
@@ -18,6 +20,7 @@ SRC="$ROOT/src"
   -Wall -Wextra \
   -I"$ROOT/tools/preview/stub" \
   -I"$ROOT/tools/fake" \
+  -I"$ROOT/build/generated" \
   -I"$SRC" \
   "$ROOT/tools/preview/preview.c" \
   "$ROOT/tools/preview/vita2d_soft.c" \
@@ -39,6 +42,7 @@ SRC="$ROOT/src"
   "$SRC/panels/registry.c" \
   "$SRC/panels/storage.c" \
   "$SRC/panels/system.c" \
+  "$SRC/ui/about.c" \
   "$SRC/ui/core_text.c" \
   "$SRC/ui/header.c" \
   "$SRC/ui/launch_card.c" \

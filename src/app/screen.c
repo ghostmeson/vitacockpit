@@ -5,6 +5,7 @@
 #include "gfx/theme.h"
 #include "panels/plugins.h"
 #include "panels/registry.h"
+#include "ui/about.h"
 #include "ui/header.h"
 #include "ui/modal.h"
 
@@ -77,6 +78,8 @@ void screen_draw(float t, const UiState *ui)
         theme_panel(g_frame.rect, g_frame.panel->title, g_frame.panel->accent,
                     g_frame.chrome);
         g_frame.panel->draw(g_frame.panel, g_frame.rect);
+    } else {
+        about_draw(ui);
     }
 
     modal_draw(ui);

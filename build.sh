@@ -46,7 +46,7 @@ STATE="$ROOT/.source-stamp"
 # Hash only what enters the VPK plus the build recipe. Test/preview edits do not
 # burn a number; the safe flag does, because the authid and the eboot differ.
 SOURCE_HASH=$(cd "$ROOT" && \
-  find src sce_sys CMakeLists.txt build.sh -type f -print0 |
+  find src sce_sys CMakeLists.txt build.sh tools/gen-build-id.sh -type f -print0 |
   sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1)
 SOURCE_HASH="${SOURCE_HASH}:${SAFE}"
 

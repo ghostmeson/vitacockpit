@@ -737,5 +737,25 @@ int main(int argc, char **argv)
     if (!render(dir, "preview-home-plugins-warning.png", 6.0f, &ui))
         return 1;
 
+    /* ABOUT: identity, the guarded reboot, and the real power-off path. */
+    reset_scene(&ui);
+    ui.tab = UI_TAB_ABOUT;
+    if (!render(dir, "preview-about.png", 7.0f, &ui))
+        return 1;
+
+    reset_scene(&ui);
+    ui.tab = UI_TAB_ABOUT;
+    fake_set_power(15, 0);
+    metrics_sample_slow();
+    if (!render(dir, "preview-about-blocked.png", 7.1f, &ui))
+        return 1;
+
+    reset_scene(&ui);
+    ui.tab = UI_TAB_ABOUT;
+    fake_set_power_absent();
+    metrics_sample_slow();
+    if (!render(dir, "preview-about-unknown.png", 7.2f, &ui))
+        return 1;
+
     return 0;
 }

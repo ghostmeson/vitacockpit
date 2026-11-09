@@ -37,6 +37,18 @@ endif()
 # artifact name.
 option(COCKPIT_SAFE "Build a safe eboot (no ux0:/ur0: access)" OFF)
 
+# One generated identity header serves the app, the host tests, and the
+# previews. build.sh and both host scripts call the same generator.
+set(COCKPIT_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
+execute_process(
+  COMMAND "${CMAKE_SOURCE_DIR}/tools/gen-build-id.sh"
+          "${COCKPIT_GENERATED_DIR}/cockpit_build.h" "${COCKPIT_SAFE}"
+  RESULT_VARIABLE COCKPIT_ID_RESULT)
+if(NOT COCKPIT_ID_RESULT EQUAL 0)
+  message(FATAL_ERROR "build identity generation failed")
+endif()
+include_directories("${COCKPIT_GENERATED_DIR}")
+
 set(COCKPIT_VARIANT "")
 if(COCKPIT_SAFE)
   set(COCKPIT_VARIANT "-safe")
@@ -75,6 +87,7 @@ add_executable(cockpit
   src/panels/storage.c
   src/panels/system.c
   src/platform/platform_psp2.c
+  src/ui/about.c
   src/ui/core_text.c
   src/ui/header.c
   src/ui/launch_card.c

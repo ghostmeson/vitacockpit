@@ -10,12 +10,21 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT="$ROOT/build/test"
 
 mkdir -p "$OUT"
+mkdir -p "$ROOT/build/generated"
+"$ROOT/tools/gen-build-id.sh" "$ROOT/build/generated/cockpit_build.h" OFF >/dev/null
+
+# The safe variant is a distinct identity; prove the generator records it.
+SAFE_HDR="$OUT/cockpit_build_safe.h"
+"$ROOT/tools/gen-build-id.sh" "$SAFE_HDR" --safe >/dev/null
+grep -q '#define COCKPIT_SAFE 1' "$SAFE_HDR"
+rm -f "$SAFE_HDR"
 
 CC="${CC:-cc}"
 
 "$CC" -std=c99 -O1 -g \
   -Wall -Wextra \
   -I"$ROOT/src" \
+  -I"$ROOT/build/generated" \
   -I"$ROOT/tools/fake" \
   "$ROOT/tools/test/test_metrics.c" \
   "$ROOT/tools/fake/fake_platform.c" \
@@ -29,6 +38,7 @@ CC="${CC:-cc}"
 "$CC" -std=c99 -O1 -g \
   -Wall -Wextra \
   -I"$ROOT/src" \
+  -I"$ROOT/build/generated" \
   -I"$ROOT/tools/fake" \
   "$ROOT/tools/test/test_editor.c" \
   "$ROOT/tools/fake/fake_platform.c" \
@@ -47,6 +57,7 @@ CC="${CC:-cc}"
 "$CC" -std=c99 -O1 -g \
   -Wall -Wextra \
   -I"$ROOT/src" \
+  -I"$ROOT/build/generated" \
   "$ROOT/tools/test/test_ui.c" \
   "$ROOT/src/ui/core_text.c" \
   "$ROOT/src/ui/plugin_nav.c" \
