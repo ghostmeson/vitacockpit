@@ -34,6 +34,7 @@ typedef enum {
     PLUGIN_NAV_DOCK_RIGHT,
     PLUGIN_NAV_ACTIVATE_DOCK,
     PLUGIN_NAV_ACTIVATE_ROW,
+    PLUGIN_NAV_ACTIVATE_ABOUT,
 } PluginNavAction;
 
 /*

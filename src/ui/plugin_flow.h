@@ -87,6 +87,14 @@ PluginDockAction plugin_flow_primary_action(PluginFlowState state);
 int plugin_flow_battery_blocked(void);
 
 /*
+ * The full reboot gate: invalid power, below 20% while discharging, an
+ * unrecovered write, or a failed recovery. Returns the reason string, or NULL
+ * when a reboot may proceed. ABOUT and the dock read this same function so
+ * the two surfaces cannot diverge.
+ */
+const char *plugin_flow_reboot_block_reason(void);
+
+/*
  * The one inline warning line. Precedence: the app's transient message, the
  * preview's locked/no-change/discard reason, the battery gate, a kernel or
  * storage warning for a changed row, then the `SAVE, REBOOT LATER` copy while

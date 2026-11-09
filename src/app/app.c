@@ -135,6 +135,17 @@ static void clear_dock_message(UiState *ui)
     ui->dock_message[0] = '\0';
 }
 
+static void set_about_message(UiState *ui, const char *text)
+{
+    snprintf(ui->about_message, sizeof(ui->about_message), "%s",
+             text == NULL ? "" : text);
+}
+
+static void clear_about_message(UiState *ui)
+{
+    ui->about_message[0] = '\0';
+}
+
 /*
  * Cross on a list row stages it. Nothing is written and no dialog opens: a
  * change is intent until the dock commits it (KD1, R22). A row the editor will
@@ -211,6 +222,47 @@ static void request_reboot(UiState *ui)
  * showing; a draft commits the working set. The editor owns the stale check,
  * the `.undo`, and the write (KTD5).
  */
+/*
+ * Cross on ABOUT. The gate runs first, so a blocked reboot never opens a
+ * confirmation that would refuse itself. When the gate allows it, the body
+ * states what a reboot will do to the current editor state: a draft or preview
+ * is lost, a saved batch is applied, and an idle config is untouched.
+ */
+static void activate_about(UiState *ui)
+{
+    const char *block = plugin_flow_reboot_block_reason();
+
+    if (block != NULL) {
+        set_about_message(ui, block);
+        return;
+    }
+
+    clear_about_message(ui);
+
+    const char *title = "REBOOT";
+    const char *body = "REBOOT THE CONSOLE?";
+
+    if (editor_preview_active()) {
+        title = "REBOOT AND DISCARD";
+
+        if (editor_preview_discards_draft())
+            body = "THE RESTORE PREVIEW AND STAGED DRAFT WILL BE DISCARDED. "
+                   "APPLY THE RESTORE WITH DISCARD DRAFT & RESTORE IN "
+                   "PLUGINS. REBOOT WITHOUT APPLYING?";
+        else
+            body = "THE RESTORE PREVIEW WILL BE DISCARDED. APPLY IT WITH "
+                   "CONFIRM & REBOOT IN PLUGINS. REBOOT WITHOUT APPLYING?";
+    } else if (editor_draft_dirty()) {
+        title = "REBOOT AND DISCARD";
+        body = "STAGED PLUGIN CHANGES WILL BE DISCARDED. APPLY THEM WITH "
+               "CONFIRM & REBOOT IN PLUGINS. REBOOT WITHOUT APPLYING?";
+    } else if (g_editor.pending_count > 0) {
+        body = "THE SAVED CONFIG WILL BE APPLIED AT NEXT BOOT. REBOOT NOW?";
+    }
+
+    modal_open_reboot(ui, title, body);
+}
+
 static void do_commit(UiState *ui, int reboot)
 {
     char err[ERR_TEXT_MAX];
@@ -368,15 +420,13 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
         break;
 
     case PLUGIN_NAV_MODAL_CONFIRM:
-        /*
-         * The reboot request is wired by the ABOUT unit. Until then, a confirm
-         * closes the panel; U4 replaces this with the gated request.
-         */
         close_modal(ui);
+        request_reboot(ui);
         break;
 
     case PLUGIN_NAV_TAB_LEFT:
         clear_dock_message(ui);
+        clear_about_message(ui);
         plugin_flow_focus_list(ui);
         ui->tab = plugin_nav_tab_step(ui->tab, -1);
         if (ui->tab == UI_TAB_PLUGINS) {
@@ -388,6 +438,7 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
 
     case PLUGIN_NAV_TAB_RIGHT:
         clear_dock_message(ui);
+        clear_about_message(ui);
         plugin_flow_focus_list(ui);
         ui->tab = plugin_nav_tab_step(ui->tab, 1);
         if (ui->tab == UI_TAB_PLUGINS) {
@@ -437,6 +488,9 @@ static void apply_nav_action(UiState *ui, PluginNavAction action)
         break;
     case PLUGIN_NAV_ACTIVATE_ROW:
         stage_selected_row(ui);
+        break;
+    case PLUGIN_NAV_ACTIVATE_ABOUT:
+        activate_about(ui);
         break;
 
     case PLUGIN_NAV_NONE:
@@ -538,6 +592,20 @@ int app_run(void)
             slow_acc = 0.0;
 
         plugin_flow_revalidate_focus(&ui);
+
+        /*
+         * The gate is read every frame. A battery that crosses the floor while
+         * the confirmation is open closes it with the reason instead of
+         * letting a stale open confirmation send a request.
+         */
+        if (ui.modal == UI_MODAL_REBOOT) {
+            const char *block = plugin_flow_reboot_block_reason();
+
+            if (block != NULL) {
+                close_modal(&ui);
+                set_about_message(&ui, block);
+            }
+        }
 
         vita2d_start_drawing();
         vita2d_clear_screen();

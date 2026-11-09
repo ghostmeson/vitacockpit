@@ -92,6 +92,8 @@ PluginNavAction plugin_nav_action(const UiState *ui, InputEvent event,
                                  : PLUGIN_NAV_SELECT_DOWN;
 
     case INPUT_ACCEPT:
+        if (ui->tab == UI_TAB_ABOUT)
+            return PLUGIN_NAV_ACTIVATE_ABOUT;
         if (ui->tab != UI_TAB_PLUGINS)
             return PLUGIN_NAV_NONE;
         if (ui->focus == UI_FOCUS_DOCK)

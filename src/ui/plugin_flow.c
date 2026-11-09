@@ -258,6 +258,23 @@ int plugin_flow_battery_blocked(void)
     return g_metrics.batt_pct < REBOOT_MIN_PERCENT && !g_metrics.charging;
 }
 
+const char *plugin_flow_reboot_block_reason(void)
+{
+    if (!g_metrics.power_valid)
+        return "BATTERY LEVEL UNKNOWN - CHARGE BEFORE REBOOTING";
+
+    if (plugin_flow_battery_blocked())
+        return "REBOOT BLOCKED - CHARGE TO 20%";
+
+    if (g_editor.write_unrecovered)
+        return "REPAIR WITH UNDO FIRST";
+
+    if (g_editor.recover_failed)
+        return "RECOVERY FAILED";
+
+    return NULL;
+}
+
 static int preview_committable(void)
 {
     return editor_preview_active() && !editor_preview_no_change() &&
@@ -371,14 +388,10 @@ void plugin_flow_dock_warning(const UiState *ui, char *buf, size_t cap)
 
     if (state == PLUGIN_FLOW_DRAFT || state == PLUGIN_FLOW_PREVIEW ||
         state == PLUGIN_FLOW_SAVED) {
-        if (!g_metrics.power_valid) {
-            snprintf(buf, cap,
-                     "BATTERY LEVEL UNKNOWN - CHARGE BEFORE REBOOTING");
-            return;
-        }
-        if (plugin_flow_battery_blocked()) {
-            snprintf(buf, cap, "REBOOT BLOCKED - CHARGE TO %d%%",
-                     REBOOT_MIN_PERCENT);
+        const char *block = plugin_flow_reboot_block_reason();
+
+        if (block != NULL) {
+            snprintf(buf, cap, "%s", block);
             return;
         }
     }

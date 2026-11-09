@@ -188,7 +188,8 @@ static void test_tab_step_and_about(void)
     CHECK(plugin_nav_action(&ui, INPUT_RIGHT, 9, 0) == PLUGIN_NAV_NONE);
     CHECK(plugin_nav_action(&ui, INPUT_TAB_LEFT, 9, 0) ==
           PLUGIN_NAV_TAB_LEFT);
-    CHECK(plugin_nav_action(&ui, INPUT_ACCEPT, 9, 0) == PLUGIN_NAV_NONE);
+    CHECK(plugin_nav_action(&ui, INPUT_ACCEPT, 9, 0) ==
+          PLUGIN_NAV_ACTIVATE_ABOUT);
 
     plugin_nav_apply_scroll(&ui, 1000.0f, 1.0f, 120, 400);
     CHECK(ui.vitals_scroll == 0.0f);

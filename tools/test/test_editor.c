@@ -3401,6 +3401,54 @@ static void test_undo_snapshot_failure_preserves_previous(void)
     fake_fail_rename_path("ur0:tai/config.txt.undo", FAKE_RENAME_NONE);
 }
 
+static void test_reboot_gate(void)
+{
+    fake_reset();
+    editor_scan();
+    metrics_init();
+
+    fake_set_power(80, 0);
+    metrics_sample_slow();
+    CHECK(plugin_flow_reboot_block_reason() == NULL);
+
+    fake_set_power(15, 0);
+    metrics_sample_slow();
+    CHECK(strcmp(plugin_flow_reboot_block_reason(),
+                 "REBOOT BLOCKED - CHARGE TO 20%") == 0);
+
+    fake_set_power(15, 1);
+    metrics_sample_slow();
+    CHECK(plugin_flow_reboot_block_reason() == NULL);
+
+    fake_set_power_absent();
+    metrics_sample_slow();
+    CHECK(strcmp(plugin_flow_reboot_block_reason(),
+                 "BATTERY LEVEL UNKNOWN - CHARGE BEFORE REBOOTING") == 0);
+
+    fake_set_power(80, 0);
+    metrics_sample_slow();
+
+    g_editor.write_unrecovered = 1;
+    CHECK(strcmp(plugin_flow_reboot_block_reason(),
+                 "REPAIR WITH UNDO FIRST") == 0);
+    g_editor.write_unrecovered = 0;
+
+    g_editor.recover_failed = 1;
+    CHECK(strcmp(plugin_flow_reboot_block_reason(), "RECOVERY FAILED") == 0);
+    g_editor.recover_failed = 0;
+
+    /*
+     * A config that is missing or too large is not a reboot hazard; those
+     * reasons belong to the editor, not this gate.
+     */
+    g_editor.source_ok = 0;
+    CHECK(plugin_flow_reboot_block_reason() == NULL);
+    g_editor.source_ok = 1;
+    g_editor.too_large = 1;
+    CHECK(plugin_flow_reboot_block_reason() == NULL);
+    g_editor.too_large = 0;
+}
+
 static int card_has(const LaunchCard *card, const char *text)
 {
     return strstr(card->body, text) != NULL;
@@ -3468,6 +3516,7 @@ static void test_launch_card_copy(void)
 int main(void)
 {
     test_scan_sample();
+    test_reboot_gate();
     test_launch_card_copy();
     test_orphan_old_is_not_deleted();
     test_orphan_scan_failure_is_visible();
