@@ -195,12 +195,12 @@ A job is not done until the build, tests, previews, docs, and README agree.
 
 ## Current state (2026-11-10)
 
-- Artifact: `build/cockpit-v01.01-b166.vpk`, 135,611 bytes, SHA-256
-  `70e3d9acc5bfefc6b2cdf238ce69df9b463b973c6501df1a2443aba2a5c5fe87`.
-- GitHub release `v1.01` carries this VPK. The project is `built`, not
-  `verified`.
-- b150 is confirmed on the 3.65 console. b166 adds the plugin-manager-first tab
-  order, the launch safety card, and the ABOUT reboot gate; it has not run on
-  hardware yet.
+- Artifact: `build/cockpit-v01.02-b168.vpk`, 162,685 bytes, SHA-256
+  `a9ff4759cd9f7e5c40e070f4ac8fd0baea85bb85c7929ec4b5f09339f9b06923`.
+- GitHub release `v1.02` carries this VPK.
+- b166 (`v1.01`) is confirmed on a **PS Vita 1000 running 3.65 Enso** (user
+  report, 2026-11-10). The project is `verified` for the app code. b168 adds the
+  launcher icon and LiveArea art; it is built and packaged, and its bubble art
+  has not been separately observed on the home screen.
 - The CORE idle-clock unit remains `[C]`; a coarser-than-microseconds counter is
   caught only by the static-100 % hardware check.

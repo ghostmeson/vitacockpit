@@ -13,7 +13,7 @@ release and repo links point at the published repository.
    gallery post puts the images at the top, so drop the markers.
 3. The release and repo links below are live. Update them if the release tag
    changes.
-4. The build line is the b166 artifact. Rebuild and update it if the source
+4. The build line is the b168 artifact. Rebuild and update it if the source
    changes before posting.
 
 Keep the known-issues section last. It is the part that makes the rest
@@ -21,9 +21,9 @@ believable, and it is where the honest limits belong.
 
 ## Title options
 
-1. `COCKPIT — a taiHEN config.txt plugin manager for PS Vita, with a real-numbers dashboard (v1.01)`
+1. `COCKPIT — a taiHEN config.txt plugin manager for PS Vita, with a real-numbers dashboard (v1.02)`
 2. `I built a PS Vita plugin manager that refuses to show fake numbers`
-3. `COCKPIT v1.01: manage your taiHEN plugins without hand-editing config.txt`
+3. `COCKPIT v1.02: manage your taiHEN plugins without hand-editing config.txt`
 
 ---
 
@@ -38,7 +38,9 @@ and lets you stage enables and disables as one reviewed batch. VITALS is the
 second tab; ABOUT is the third.
 
 It is one userland app. No kernel plugin, no system plugin, no Quick Menu panel,
-no FTP server. It installs a VPK and never adds its own line to your config.
+no FTP server. It installs a VPK and never adds its own line to your config. The
+launcher bubble is the yellow C and cyan scanline in the chamfered frame — no
+more SDK placeholder.
 
 ▸ IMAGE: screenshots/01-plugins.png
 
@@ -158,10 +160,10 @@ say `--` instead.
 
 ### Known warnings and issues
 
-- **Build 164 has not been run on my console yet.** b150 has, and it works. b166
-  adds the plugin-manager-first tabs, the launch card, and the ABOUT reboot gate.
-  The new screens are the part I most want tested; if something looks wrong,
-  please say which tab and what the screen showed.
+- **b166 is running on my PS Vita 1000 on 3.65 Enso.** b168 adds the launcher
+  icon and LiveArea art; the app code is the tested b166. If the new bubble art
+  looks wrong on your home screen, say so — that is the part I have not seen on
+  a second unit.
 - **The launch card describes the backup it actually wrote.** If your config is
   unreadable or too large, expect the locked body, not a restore promise.
 - **ABOUT's REBOOT is the only action on the page.** A staged batch is discarded
@@ -190,9 +192,9 @@ say `--` instead.
 Built with VitaSDK 2026.08 and libvita2d. 1,491 host checks and 51 preview scenes
 pass, and the VPK contains only `eboot.bin` and `sce_sys/`.
 
-**Download:** https://github.com/ghostmeson/vitacockpit/releases/tag/v1.01
+**Download:** https://github.com/ghostmeson/vitacockpit/releases/tag/v1.02
 
 **Source:** https://github.com/ghostmeson/vitacockpit
 
-**Build:** `cockpit-v01.01-b166.vpk`, 135,611 bytes, SHA-256
-`70e3d9acc5bfefc6b2cdf238ce69df9b463b973c6501df1a2443aba2a5c5fe87`
+**Build:** `cockpit-v01.02-b168.vpk`, 162,685 bytes, SHA-256
+`a9ff4759cd9f7e5c40e070f4ac8fd0baea85bb85c7929ec4b5f09339f9b06923`

@@ -650,3 +650,19 @@ The VITALS images ([preview-healthy.png](preview-healthy.png),
 [preview-vitals-plugins.png](preview-vitals-plugins.png), and
 [preview-vitals-plugins-warning.png](preview-vitals-plugins-warning.png)) are
 referenced by the project `README.md`.
+
+## 10. Launcher assets
+
+The bubble icon is `sce_sys/icon0.png`, 128 × 128. It is a black field with the
+same chamfered yellow frame the panels use, a heavy yellow `C`, and a cyan
+scanline with an end block. It is text-free so it reads at launcher size; the
+system draws the app name beside it.
+
+The LiveArea uses the same mark. `sce_sys/livearea/contents/bg.png` is 840 × 500:
+a black HUD field with the chamfered frame, a low-opacity `C` watermark on the
+right, and the yellow/cyan rule at the bottom. `startup.png` is 280 × 158 and
+pairs a smaller mark with the `COCKPIT` wordmark and `TAIHEN CONFIG MANAGER`.
+
+The master art is vector; the shipped files are the 128 px icon, the 840 × 500
+background, and the 280 × 158 startup image. The icon is repeated in
+`screenshots/09-icon.png` for the announcement.

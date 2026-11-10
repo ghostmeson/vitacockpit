@@ -127,7 +127,7 @@ Build identity is generated, not hand-written. `tools/gen-build-id.sh` reads
 `build/generated/cockpit_build.h`. CMake, `tools/test/run.sh`, and
 `tools/preview/run.sh` all call it, so ABOUT, the host tests, the previews, and
 the VPK name cannot drift. The package keeps `##.##`; ABOUT drops the leading
-zero for the release label (`01.01` becomes `1.01`).
+zero for the release label (`01.02` becomes `1.02`).
 
 Outside the app: `tools/fake/` is the shared mutable port double, `tools/test/`
 links it against the real `core/` to assert the sampling policy and the plugin

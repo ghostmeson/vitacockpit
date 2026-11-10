@@ -1,12 +1,13 @@
 # Screenshots
 
-Images for the community announcement. All eight are 960 × 544, the app's native
-output size.
+Images for the community announcement. The eight app renders are 960 × 544, the
+app's native output size. `09-icon.png` is the 128 × 128 launcher icon.
 
-They are **host preview renders**, not console captures: `tools/preview/run.sh`
-draws the shipped composition through the software vita2d shim against the fake
-platform. The layout, palette, type, and panel states are the ones the VPK
-ships; the readings in them are fixtures.
+The app renders are **host preview renders**, not console captures:
+`tools/preview/run.sh` draws the shipped composition through the software
+vita2d shim against the fake platform. The layout, palette, type, and panel
+states are the ones the VPK ships; the readings in them are fixtures. The icon
+is the raster installed as `sce_sys/icon0.png`.
 
 | File | Scene | What it shows |
 |---|---|---|
@@ -18,6 +19,7 @@ ships; the readings in them are fixtures.
 | `06-about.png` | `preview-about` | ABOUT: product, version, build, guarded REBOOT, and the real power-off path |
 | `07-reboot-confirm.png` | `preview-reboot-draft` | The ABOUT confirmation when a staged batch would be discarded |
 | `08-core-unavailable.png` | `preview-cpu-absent` | A failed CPU read: every CPU field renders `--`, never zero |
+| `09-icon.png` | `sce_sys/icon0.png` | The launcher icon: yellow C and cyan scanline in the chamfered HUD frame |
 
 ## Regenerate
 
@@ -34,4 +36,4 @@ useful for an announcement.
 Reddit strips local paths from a self-post, so upload the images to the post
 gallery rather than linking this directory. `01-plugins.png` is the hero;
 `03`, `04`, `05`, `06`, and `07` are the ones that explain the manager and the
-new launch gate.
+new launch gate; `09-icon.png` is the launcher mark.

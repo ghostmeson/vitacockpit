@@ -70,8 +70,9 @@ these are additive, not invasive. See §7.
 - Unsafe eboot. Reading `uma0:` capacity needs a call the safe authid refuses,
   so the app ships `UNSAFE` (D42); `build.sh --safe` builds the restricted
   variant.
-- No hardware is reachable from the current development environment. The b13
-  run in §5 is the only dashboard evidence; b166 has not run on the console.
+- The user reports b166 (`v1.01`) runs on a PS Vita 1000 with 3.65 Enso
+  (2026-11-10). b168 adds only the launcher icon and LiveArea art; the app code
+  is the tested b166.
 - The product is one app. A plugin manager that rewrites `config.txt` is enough
   surface; adding a resident process or a boot hook increased the failure cost
   without improving the manager.
@@ -155,7 +156,7 @@ makes "which build is on the Vita?" answerable.
 The artifact is named:
 
 ```
-build/cockpit-v<version>-b<build>.vpk        e.g. cockpit-v01.01-b166.vpk
+build/cockpit-v<version>-b<build>.vpk        e.g. cockpit-v01.02-b168.vpk
 ```
 
 | Part | Source | Changes |
@@ -194,7 +195,7 @@ community knowledge.
 
 | Area | Status |
 |---|---|
-| Builds and packages | `[V]` clean default and safe builds, 0 compiler warnings; `cockpit-v01.01-b166.vpk` is 135,611 bytes, SHA-256 `70e3d9acc5bfefc6b2cdf238ce69df9b463b973c6501df1a2443aba2a5c5fe87`; the VPK contains `eboot.bin` and `sce_sys/` only; the unstripped ELF is kept as `build/cockpit` |
+| Builds and packages | `[V]` clean default and safe builds, 0 compiler warnings; `cockpit-v01.02-b168.vpk` is 162,685 bytes, SHA-256 `a9ff4759cd9f7e5c40e070f4ac8fd0baea85bb85c7929ec4b5f09339f9b06923`; the VPK contains `eboot.bin`, `sce_sys/` (including the new `icon0.png`, `bg.png`, and `startup.png`), and no other file; the unstripped ELF is kept as `build/cockpit` |
 | Host tests (sampling, plugin model, draft/commit, restore, undo, input, dock flow, launch card, ABOUT text) | `[V]` `tools/test/run.sh`, 161 metrics + 1,264 editor + 66 UI checks, 0 failures |
 | Plugin list (`ux0:` first, `ur0:` fallback) | `[V]` host harness keeps a 19-entry real config in full and groups it as KERNEL 9 / SYSTEM 8 / SYSTEM APPS 1 / ALL TITLES 1; host tests cover BOM, commented entries, long names, section mapping, priority merge, the 64-entry ceiling, full-path duplicate rows, `*!` halts, lock/warn policy, the two snapshots, and the exact `#` edit |
 | Staged transaction and restore | `[V]` host tests cover stage/discard/commit, one `.undo` per batch, the stale-file refusal, the plugin-level restore diff, `WILL REMOVE`, the locked-drop and no-change refusals, the read-only refusal for an unreadable or truncated live config, the `*!` halt before a protected path, the undo repair after an unrecovered write, the removed-path pending truth, the failed-save `.undo` preservation, the saved/last-write truth table, focus and the battery gate. `[C]` the end-to-end flow is unverified on hardware. |
@@ -205,8 +206,8 @@ community knowledge.
 | Storage result unit (bytes) | `[C]` — the devctl byte unit remains unconfirmed |
 | Device model codes | `[V]` `psp2common/kernel/sysmem.h` |
 | Screen layout and typography | `[V]` host preview render, 51 states, busiest 6,712 draw calls against the 8,000 budget; a three-tab header, the VITALS-only FRAME strip, the launch card, ABOUT, the reboot confirmation, the off-left/on-right rocker, the 12 px dock padding, and CORE/POWER outlines (D53, D54, D77, D78, D81, D83, D99) |
-| Launch card, three tabs, ABOUT | `[V]` host tests cover tab wrap, ABOUT inertness, the four card bodies, the reboot gate, and the confirmation copy; the preview renders the success, failed-snapshot, no-config, and unreadable card states, ABOUT allowed/blocked/unknown, and the four confirmation states. `[C]` none of the new screens has run on the console. |
-| Renders on hardware | `[V]` 2026-11-02 (b13): text, memory, power, identity and frame all draw on the console. 2026-11-04 (b124): the app and the PLUGINS screen draw. 2026-11-08: the user reports b150 runs on the console; CORE was memory-only. b166 adds the plugin-manager-first tabs, the launch card, and the ABOUT reboot gate and has not run on hardware yet. |
+| Launch card, three tabs, ABOUT | `[V]` host tests cover tab wrap, ABOUT inertness, the four card bodies, the reboot gate, and the confirmation copy; the preview renders the success, failed-snapshot, no-config, and unreadable card states, ABOUT allowed/blocked/unknown, and the four confirmation states. `[V]` 2026-11-10: the user reports b166, which contains these screens, runs on a PS Vita 1000 with 3.65 Enso. |
+| Renders on hardware | `[V]` 2026-11-02 (b13): text, memory, power, identity and frame all draw on the console. 2026-11-04 (b124): the app and the PLUGINS screen draw. 2026-11-08: the user reports b150 runs on the console; CORE was memory-only. 2026-11-10: the user reports b166, with the plugin-manager-first tabs, the launch card, and the ABOUT reboot gate, runs on a PS Vita 1000 with 3.65 Enso. b168 adds the launcher art only. |
 | b74 startup crash | `[V]` C2-12828-1; the core names `COCKPIT01`, stop reason `0x30003`, PC `0`, and r0 `0x812c0ae4` (`&reading` at `platform_read_clocks+0x2e`). The weak import and the whole clock path are gone (D99). |
 | Config write path | `[C]` the adapter's rename-away swap and live read-back are implemented and build; host tests exercise the same transaction in the fake, not the SDK calls, and the target's rename semantics are unverified. A failure names the stage (`OPEN`, `DATA`, `CLOSE`, `VERIFY`, `MOVE`, `RENAME`, `READBACK`, `RESTORE`, `UNDO`). |
 | Restore reads | `[V]` host tests read `.original`, `.session`, and `.undo` through the same port; `[C]` the SDK file reads are not exercised on hardware. |
@@ -239,9 +240,14 @@ anything about the device: every reading in them is synthetic.
 
 ### Hardware handoff
 
-The next action is to flash `build/cockpit-v01.01-b166.vpk` and run this
-checklist on the 3.65 Enso console. The project stays `built` until the user
-records the evidence; no item below is claimed by the host suite.
+Status: b166 (`v1.01`) has run on a **PS Vita 1000 with 3.65 Enso** (user report,
+2026-11-10). The project is `verified` for that build. The checklist below is
+retained as the regression record; b168 adds only the launcher icon and LiveArea
+art, so its app behavior is the tested b166. The new bubble art is built into
+the VPK but has not been separately observed on the home screen.
+
+The next regression pass is to flash `build/cockpit-v01.02-b168.vpk` and run this
+checklist. No item below is claimed by the host suite.
 
 1. Flash the VPK and launch COCKPIT. Confirm PLUGINS is the first tab and the
    landing screen, the safety card appears after the scan, and Cross or Circle
@@ -277,7 +283,7 @@ records the evidence; no item below is claimed by the host suite.
 10. Test the battery gate below 20 % while discharging and with the power read
     invalid. Confirm the save path stays primary, the dock's `REBOOT NOW` is
     gated, ABOUT's REBOOT is dimmed with the reason, and no confirmation opens.
-11. ABOUT: confirm the version reads `1.01` and the build matches the VPK. With
+11. ABOUT: confirm the version reads `1.02` and the build matches the VPK. With
     no pending work, Cross opens the confirmation; Cross reboots, Circle
     cancels. Confirm the post-request notice and the failure copy.
 12. Stage a batch, switch to ABOUT, and press Cross. Confirm the title is
@@ -337,7 +343,7 @@ Panels degrade, they do not crash.
 
 | Step | Adds | Needs |
 |---|---|---|
-| v1 | the plugin manager, VITALS, and ABOUT | b166 builds and is host-tested; the hardware checklist above is pending |
+| v1 | the plugin manager, VITALS, and ABOUT | b166 is hardware-tested on a PS Vita 1000 with 3.65 Enso; b168 adds the launcher art |
 | v2 | app inventory, per-title storage | `sceAppMgrGetAppInfo`, directory walk of `ux0:app` |
 | v3 | network status | `SceNetCtl` in the app process, not in a shell plugin |
 | v4 | theme switching, a second visual language | a theme abstraction in `gfx/theme` |
