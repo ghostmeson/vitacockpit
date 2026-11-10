@@ -62,6 +62,9 @@ export PATH="$VITASDK/bin:$PATH"
 ```
 
 - The artifact is `build/cockpit-v<version>-b<build>[-safe].vpk`.
+- The launcher PNGs (`sce_sys/icon0.png`, `livearea/contents/bg.png`, and
+  `startup.png`) must be 8-bit indexed/colormapped, not RGBA. `file` must say
+  `8-bit colormap`; RGBA fails installation with `0x8010113D` (D107).
 - `BUILD_NUMBER` lives in this directory, never in `build/`. `build.sh` owns the
   increment and reuses the number only when the source hash is unchanged.
 - The build directory holds exactly one VPK. `send.sh` has no fixed-name
@@ -195,11 +198,11 @@ A job is not done until the build, tests, previews, docs, and README agree.
 
 ## Current state (2026-11-10)
 
-- Artifact: `build/cockpit-v01.02-b168.vpk`, 162,685 bytes, SHA-256
-  `a9ff4759cd9f7e5c40e070f4ac8fd0baea85bb85c7929ec4b5f09339f9b06923`.
-- GitHub release `v1.02` carries this VPK.
+- Artifact: `build/cockpit-v01.03-b170.vpk`, 147,044 bytes, SHA-256
+  `fa4a9847dd1e8a4983c763309366c18b6c0e87d89c034c0670f3be71e051e6d0`.
+- GitHub release `v1.03` carries this VPK.
 - b166 (`v1.01`) is confirmed on a **PS Vita 1000 running 3.65 Enso** (user
-  report, 2026-11-10). The project is `verified` for the app code. b168 adds the
+  report, 2026-11-10). The project is `verified` for the app code. b170 adds the
   launcher icon and LiveArea art; it is built and packaged, and its bubble art
   has not been separately observed on the home screen.
 - The CORE idle-clock unit remains `[C]`; a coarser-than-microseconds counter is

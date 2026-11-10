@@ -127,7 +127,7 @@ Build identity is generated, not hand-written. `tools/gen-build-id.sh` reads
 `build/generated/cockpit_build.h`. CMake, `tools/test/run.sh`, and
 `tools/preview/run.sh` all call it, so ABOUT, the host tests, the previews, and
 the VPK name cannot drift. The package keeps `##.##`; ABOUT drops the leading
-zero for the release label (`01.02` becomes `1.02`).
+zero for the release label (`01.03` becomes `1.03`).
 
 Outside the app: `tools/fake/` is the shared mutable port double, `tools/test/`
 links it against the real `core/` to assert the sampling policy and the plugin
@@ -339,6 +339,7 @@ cached facts and draws; it never reads, stats, or writes a file.
 | A userland UNSAFE eboot may cold-reset on 3.65 Enso | `[C]` the header says it always returns 0; the reset itself is unverified, including from the ABOUT confirmation | `platform_psp2.c` |
 | Holding the power button for two seconds opens the power menu, and five seconds forces a shutdown | `[V]` the official PS Vita user guide; `[C]` the exact on-console path on this 3.65 Enso unit | `ui/about.c` |
 | `vita2d_draw_rectangle` honours the colour alpha, so the modal scrim dims the app instead of replacing it | `[C]` the host shim blends it; the device has not rendered the scrim | `gfx/draw.c`, `ui/modal.c` |
+| VPK launcher PNGs must be 8-bit indexed/colormapped | `[V]` the SDK icon is `8-bit colormap`; an RGBA `icon0.png` made VitaShell fail the install with `0x8010113D` (D107) | `sce_sys/` |
 | `sceIoSyncByFd` flushes data before close | `[V]` declared in `psp2/io/fcntl.h`; its effect is best-effort here | `platform_psp2.c` |
 | `boot_config.txt` is never opened | `[V]` no source path names it | `core/plugin_editor.c` |
 

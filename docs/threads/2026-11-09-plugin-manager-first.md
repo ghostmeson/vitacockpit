@@ -1,8 +1,8 @@
-# Plugin-manager-first COCKPIT (v1.01 → v1.02)
+# Plugin-manager-first COCKPIT (v1.01 → v1.03)
 
 **Date:** 2026-11-10
-**Status:** verified on a PS Vita 1000 with 3.65 Enso (b166 app code); v1.02
-adds the launcher art.
+**Status:** verified on a PS Vita 1000 with 3.65 Enso (b166 app code); v1.03
+adds the installable launcher art.
 
 ## Goal
 
@@ -48,16 +48,31 @@ SDK placeholder launcher art with a COCKPIT mark and record the hardware pass.
   behind the assets is the b166 code the user tested.
 - The user reports b166 (`v1.01`) runs on a **PS Vita 1000 with 3.65 Enso**
   (2026-11-10). The project is `verified` for that app code.
+- **Installer failure:** the three assets were 8-bit-per-channel RGBA PNGs.
+  VitaShell rejected the VPK with `0x8010113D`; the artwork was fine, the PNG
+  format was not.
+
+## v1.03 — installable launcher assets
+
+- The three assets are now 8-bit indexed/colormapped PNGs with an opaque RGB
+  palette, matching the format of the SDK's original icon. The RGBA source was
+  quantized to 256 colours with no dithering, then stripped to
+  `IHDR/PLTE/tRNS/IDAT/IEND`.
+- `VITA_VERSION` is `01.03`; the package is `cockpit-v01.03-b170.vpk`. The app
+  code is still b166.
+- **The VPK installs now.** The icon and LiveArea art are the same design as
+  v1.02, only re-encoded.
 
 ## Verification
 
 - `./tools/test/run.sh`: 1,491 checks, 0 failures.
 - `./tools/preview/run.sh`: 51 scenes, busiest 6,712 draw calls.
-- `build/cockpit-v01.02-b168.vpk`: 162,685 bytes, SHA-256
-  `a9ff4759cd9f7e5c40e070f4ac8fd0baea85bb85c7929ec4b5f09339f9b06923`.
+- `build/cockpit-v01.03-b170.vpk`: 147,044 bytes, SHA-256
+  `fa4a9847dd1e8a4983c763309366c18b6c0e87d89c034c0670f3be71e051e6d0`.
 - The VPK contains `eboot.bin` and `sce_sys/` only, including the three launcher
-  assets above.
-- GitHub release `v1.02` carries the VPK.
+  assets above. All three are 8-bit colormap, non-interlaced.
+- GitHub release `v1.03` carries the VPK. `v1.02` is retained as the superseded
+  release with the bad PNG format.
 - `[V]` b166 runs on a PS Vita 1000 with 3.65 Enso (user report).
 - `[C]` the new bubble art has not been separately observed on the home screen.
 
@@ -66,4 +81,4 @@ SDK placeholder launcher art with a COCKPIT mark and record the hardware pass.
 - The CORE `idleClock` unit remains `[C]`; a coarser-than-microseconds counter
   is caught only by the static-100 % idle check.
 - The regression checklist in `docs/PROJECT.md` §5 remains the record for a
-  future pass; b168 changes only the launcher assets.
+  future pass; v1.03 changes only the launcher assets.

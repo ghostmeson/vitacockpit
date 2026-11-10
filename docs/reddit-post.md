@@ -13,7 +13,7 @@ release and repo links point at the published repository.
    gallery post puts the images at the top, so drop the markers.
 3. The release and repo links below are live. Update them if the release tag
    changes.
-4. The build line is the b168 artifact. Rebuild and update it if the source
+4. The build line is the b170 artifact. Rebuild and update it if the source
    changes before posting.
 
 Keep the known-issues section last. It is the part that makes the rest
@@ -21,9 +21,9 @@ believable, and it is where the honest limits belong.
 
 ## Title options
 
-1. `COCKPIT — a taiHEN config.txt plugin manager for PS Vita, with a real-numbers dashboard (v1.02)`
+1. `COCKPIT — a taiHEN config.txt plugin manager for PS Vita, with a real-numbers dashboard (v1.03)`
 2. `I built a PS Vita plugin manager that refuses to show fake numbers`
-3. `COCKPIT v1.02: manage your taiHEN plugins without hand-editing config.txt`
+3. `COCKPIT v1.03: manage your taiHEN plugins without hand-editing config.txt`
 
 ---
 
@@ -160,7 +160,7 @@ say `--` instead.
 
 ### Known warnings and issues
 
-- **b166 is running on my PS Vita 1000 on 3.65 Enso.** b168 adds the launcher
+- **b166 is running on my PS Vita 1000 on 3.65 Enso.** b170 adds the launcher
   icon and LiveArea art; the app code is the tested b166. If the new bubble art
   looks wrong on your home screen, say so — that is the part I have not seen on
   a second unit.
@@ -192,9 +192,9 @@ say `--` instead.
 Built with VitaSDK 2026.08 and libvita2d. 1,491 host checks and 51 preview scenes
 pass, and the VPK contains only `eboot.bin` and `sce_sys/`.
 
-**Download:** https://github.com/ghostmeson/vitacockpit/releases/tag/v1.02
+**Download:** https://github.com/ghostmeson/vitacockpit/releases/tag/v1.03
 
 **Source:** https://github.com/ghostmeson/vitacockpit
 
-**Build:** `cockpit-v01.02-b168.vpk`, 162,685 bytes, SHA-256
-`a9ff4759cd9f7e5c40e070f4ac8fd0baea85bb85c7929ec4b5f09339f9b06923`
+**Build:** `cockpit-v01.03-b170.vpk`, 147,044 bytes, SHA-256
+`fa4a9847dd1e8a4983c763309366c18b6c0e87d89c034c0670f3be71e051e6d0`

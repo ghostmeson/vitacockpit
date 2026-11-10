@@ -82,7 +82,7 @@ locked instead of promising a restore point.
 
 ![ABOUT](screenshots/06-about.png)
 
-ABOUT identifies the build (`1.02`, build number) and offers the only console
+ABOUT identifies the build (`1.03`, build number) and offers the only console
 action: REBOOT, behind a confirmation. A staged batch or a restore preview is
 discarded only after the confirmation says so; a saved batch is applied at the
 next boot. The page also prints the real power-off path, because userland cannot
@@ -110,7 +110,7 @@ that exists but cannot be read shows its return code.
 
 Requires a **PS Vita on 3.65 with permanent Enso**. PSTV is not supported.
 
-1. Download `cockpit-v01.02-b168.vpk` from
+1. Download `cockpit-v01.03-b170.vpk` from
    [Releases](https://github.com/ghostmeson/vitacockpit/releases/latest).
 2. Copy it to `ux0:data`.
 3. In VitaShell, select the VPK and press Cross.
@@ -190,15 +190,15 @@ the composition root, and `src/gfx/draw.c` the only renderer caller. See
 
 ## Status
 
-Build **b168** (`v01.02`), 162,685 bytes, SHA-256
-`a9ff4759cd9f7e5c40e070f4ac8fd0baea85bb85c7929ec4b5f09339f9b06923`.
-Published as [release v1.02](https://github.com/ghostmeson/vitacockpit/releases/tag/v1.02).
+Build **b170** (`v01.03`), 147,044 bytes, SHA-256
+`fa4a9847dd1e8a4983c763309366c18b6c0e87d89c034c0670f3be71e051e6d0`.
+Published as [release v1.03](https://github.com/ghostmeson/vitacockpit/releases/tag/v1.03).
 
 - 1,491 host checks pass; 51 preview scenes render; default and `--safe` builds
   are clean.
 - The VPK contains `eboot.bin` and `sce_sys/` only.
 - **b166 (`v1.01`) is confirmed on a PS Vita 1000 running 3.65 Enso** (user
-  report, 2026-11-10). b168 adds the launcher icon and LiveArea art and packages
+  report, 2026-11-10). b170 adds the launcher icon and LiveArea art and packages
   the same app code, so the behavior is the tested one.
 - The CORE idle-clock unit remains the one unconfirmed platform claim. If the
   clock turns out to be coarser than microseconds, CORE renders `--` rather than
