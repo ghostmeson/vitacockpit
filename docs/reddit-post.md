@@ -13,7 +13,7 @@ release and repo links point at the published repository.
    gallery post puts the images at the top, so drop the markers.
 3. The release and repo links below are live. Update them if the release tag
    changes.
-4. The build line is the b170 artifact. Rebuild and update it if the source
+4. The build line is the b172 artifact. Rebuild and update it if the source
    changes before posting.
 
 Keep the known-issues section last. It is the part that makes the rest
@@ -21,9 +21,9 @@ believable, and it is where the honest limits belong.
 
 ## Title options
 
-1. `COCKPIT — a taiHEN config.txt plugin manager for PS Vita, with a real-numbers dashboard (v1.03)`
+1. `COCKPIT — a taiHEN config.txt plugin manager for PS Vita, with a real-numbers dashboard (v1.04)`
 2. `I built a PS Vita plugin manager that refuses to show fake numbers`
-3. `COCKPIT v1.03: manage your taiHEN plugins without hand-editing config.txt`
+3. `COCKPIT v1.04: manage your taiHEN plugins without hand-editing config.txt`
 
 ---
 
@@ -39,8 +39,8 @@ second tab; ABOUT is the third.
 
 It is one userland app. No kernel plugin, no system plugin, no Quick Menu panel,
 no FTP server. It installs a VPK and never adds its own line to your config. The
-launcher bubble is the yellow C and cyan scanline in the chamfered frame — no
-more SDK placeholder.
+launcher bubble is the yellow C and cyan scanline — no frame, so it reads as one
+mark inside the Vita's rounded bubble.
 
 ▸ IMAGE: screenshots/01-plugins.png
 
@@ -160,7 +160,7 @@ say `--` instead.
 
 ### Known warnings and issues
 
-- **b166 is running on my PS Vita 1000 on 3.65 Enso.** b170 adds the launcher
+- **b166 is running on my PS Vita 1000 on 3.65 Enso.** b172 adds the launcher
   icon and LiveArea art; the app code is the tested b166. If the new bubble art
   looks wrong on your home screen, say so — that is the part I have not seen on
   a second unit.
@@ -192,9 +192,9 @@ say `--` instead.
 Built with VitaSDK 2026.08 and libvita2d. 1,491 host checks and 51 preview scenes
 pass, and the VPK contains only `eboot.bin` and `sce_sys/`.
 
-**Download:** https://github.com/ghostmeson/vitacockpit/releases/tag/v1.03
+**Download:** https://github.com/ghostmeson/vitacockpit/releases/tag/v1.04
 
 **Source:** https://github.com/ghostmeson/vitacockpit
 
-**Build:** `cockpit-v01.03-b170.vpk`, 147,044 bytes, SHA-256
-`fa4a9847dd1e8a4983c763309366c18b6c0e87d89c034c0670f3be71e051e6d0`
+**Build:** `cockpit-v01.04-b172.vpk`, 146,932 bytes, SHA-256
+`6f4937e3f7881c308c297949f68aca52c7cd8a0fa85614cd8f9417fdd4721fec`

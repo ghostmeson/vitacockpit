@@ -19,7 +19,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "COCKPIT")
 set(VITA_TITLEID  "COCKPIT01")  # Exactly 9 uppercase characters.
-set(VITA_VERSION  "01.03")      # Must match ##.##.
+set(VITA_VERSION  "01.04")      # Must match ##.##.
 
 # Monotonic build number, supplied by build.sh. It goes in the artifact name so
 # successive builds are distinguishable on the console and in ux0:data; it is

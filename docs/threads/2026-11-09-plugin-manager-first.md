@@ -1,8 +1,8 @@
-# Plugin-manager-first COCKPIT (v1.01 → v1.03)
+# Plugin-manager-first COCKPIT (v1.01 → v1.04)
 
 **Date:** 2026-11-10
-**Status:** verified on a PS Vita 1000 with 3.65 Enso (b166 app code); v1.03
-adds the installable launcher art.
+**Status:** verified on a PS Vita 1000 with 3.65 Enso (b166 app code); v1.04
+adds the borderless launcher icon.
 
 ## Goal
 
@@ -63,22 +63,31 @@ SDK placeholder launcher art with a COCKPIT mark and record the hardware pass.
 - **The VPK installs now.** The icon and LiveArea art are the same design as
   v1.02, only re-encoded.
 
+## v1.04 — borderless bubble icon
+
+- The v1.03 icon reused the yellow chamfered frame. The Vita home screen already
+  draws a rounded bubble, so the frame read as a second square/border.
+- `icon0.png` now keeps only the yellow `C` and cyan scanline on black, scaled to
+  fill the safe area. The LiveArea `bg.png` and `startup.png` keep the frame.
+- `VITA_VERSION` is `01.04`; the package is `cockpit-v01.04-b172.vpk`. The app
+  code is still b166.
+
 ## Verification
 
 - `./tools/test/run.sh`: 1,491 checks, 0 failures.
 - `./tools/preview/run.sh`: 51 scenes, busiest 6,712 draw calls.
-- `build/cockpit-v01.03-b170.vpk`: 147,044 bytes, SHA-256
-  `fa4a9847dd1e8a4983c763309366c18b6c0e87d89c034c0670f3be71e051e6d0`.
-- The VPK contains `eboot.bin` and `sce_sys/` only, including the three launcher
-  assets above. All three are 8-bit colormap, non-interlaced.
-- GitHub release `v1.03` carries the VPK. `v1.02` is retained as the superseded
-  release with the bad PNG format.
+- `build/cockpit-v01.04-b172.vpk`: 146,932 bytes, SHA-256
+  `6f4937e3f7881c308c297949f68aca52c7cd8a0fa85614cd8f9417fdd4721fec`.
+- The VPK contains `eboot.bin` and `sce_sys/` only, including the launcher
+  assets. All are 8-bit colormap, non-interlaced; the icon is borderless.
+- GitHub release `v1.04` carries the VPK. `v1.02` is retained as the superseded
+  release with the bad PNG format; `v1.03` is the installable framed-icon build.
 - `[V]` b166 runs on a PS Vita 1000 with 3.65 Enso (user report).
-- `[C]` the new bubble art has not been separately observed on the home screen.
+- `[C]` the borderless bubble under the Vita's rounded mask.
 
 ## Open
 
 - The CORE `idleClock` unit remains `[C]`; a coarser-than-microseconds counter
   is caught only by the static-100 % idle check.
 - The regression checklist in `docs/PROJECT.md` §5 remains the record for a
-  future pass; v1.03 changes only the launcher assets.
+  future pass; v1.04 changes only the bubble icon.

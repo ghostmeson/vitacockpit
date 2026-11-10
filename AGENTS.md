@@ -198,11 +198,11 @@ A job is not done until the build, tests, previews, docs, and README agree.
 
 ## Current state (2026-11-10)
 
-- Artifact: `build/cockpit-v01.03-b170.vpk`, 147,044 bytes, SHA-256
-  `fa4a9847dd1e8a4983c763309366c18b6c0e87d89c034c0670f3be71e051e6d0`.
-- GitHub release `v1.03` carries this VPK.
+- Artifact: `build/cockpit-v01.04-b172.vpk`, 146,932 bytes, SHA-256
+  `6f4937e3f7881c308c297949f68aca52c7cd8a0fa85614cd8f9417fdd4721fec`.
+- GitHub release `v1.04` carries this VPK.
 - b166 (`v1.01`) is confirmed on a **PS Vita 1000 running 3.65 Enso** (user
-  report, 2026-11-10). The project is `verified` for the app code. b170 adds the
+  report, 2026-11-10). The project is `verified` for the app code. b172 adds the
   launcher icon and LiveArea art; it is built and packaged, and its bubble art
   has not been separately observed on the home screen.
 - The CORE idle-clock unit remains `[C]`; a coarser-than-microseconds counter is

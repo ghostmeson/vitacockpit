@@ -2034,3 +2034,12 @@ the console; the hardware checklist is the next action.
 **Consequence:** The VPK installs again. A future launcher-asset change must run the same conversion; `file sce_sys/icon0.png` must report `8-bit colormap`, and an RGBA PNG is a packaging bug, not an art bug.
 **Rejected:** shipping v1.02 as-is; moving the published v1.02 tag; reducing the art to 1-bit; adding `pngquant` as a build dependency when `ffmpeg`'s palettegen already performs the conversion.
 **Verification:** `[V]` `file` reports `8-bit colormap` for all three assets; `[V]` the VPK is 147,044 bytes, SHA-256 `fa4a9847dd1e8a4983c763309366c18b6c0e87d89c034c0670f3be71e051e6d0`; `[V]` 1,491 host checks and 51 preview scenes pass; the default and safe builds are clean. `[C]` the v1.03 install itself, pending the user's retry.
+
+## D108 — The bubble icon drops the frame; v1.04
+
+**Status:** Accepted (2026-11-10; supersedes the icon composition of D106)
+**Context:** The v1.03 bubble icon reused the yellow chamfered frame from the panels. The Vita home screen already draws the icon inside a rounded bubble, so the frame read as a second square/border around the mark and looked wrong at launcher size.
+**Decision:** `sce_sys/icon0.png` keeps only the yellow `C` and the cyan scanline on black, scaled to fill the safe area. The LiveArea `bg.png` and `startup.png` keep the chamfered frame because they are page and splash art, not the bubble. Bump `VITA_VERSION` to `01.04`; the artifact is `cockpit-v01.04-b172.vpk`. The app code is unchanged.
+**Consequence:** The bubble reads as one mark instead of a framed tile, while the LiveArea still matches the app's panel language.
+**Rejected:** keeping the frame; removing the frame from the LiveArea art as well (the page still benefits from it); moving the published v1.03 tag.
+**Verification:** `[V]` `icon0.png` is 128 × 128, 8-bit colormap, C + scanline with no frame; `[V]` 1,491 host checks and 51 preview scenes pass; default and safe builds are clean. `[C]` the bubble's appearance under the Vita's rounded mask.

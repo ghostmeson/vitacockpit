@@ -653,10 +653,10 @@ referenced by the project `README.md`.
 
 ## 10. Launcher assets
 
-The bubble icon is `sce_sys/icon0.png`, 128 × 128. It is a black field with the
-same chamfered yellow frame the panels use, a heavy yellow `C`, and a cyan
-scanline with an end block. It is text-free so it reads at launcher size; the
-system draws the app name beside it.
+The bubble icon is `sce_sys/icon0.png`, 128 × 128. It is a black field with a
+heavy yellow `C` and a cyan scanline with an end block — no frame, because a
+border reads as a second square inside the Vita's rounded bubble. It is
+text-free so it reads at launcher size; the system draws the app name beside it.
 
 The LiveArea uses the same mark. `sce_sys/livearea/contents/bg.png` is 840 × 500:
 a black HUD field with the chamfered frame, a low-opacity `C` watermark on the
